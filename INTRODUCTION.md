@@ -439,3 +439,14 @@ webSocketService.initPaymentWebSocket(userId, callback, orderId)
 export const disconnectWebSocket = () => webSocketService.disconnect()
 
 export default webSocketService
+
+//cd /d/Development/Codes/Mall/mall-primary-front-web
+
+<!-- $env:ANTHROPIC_BASE_URL="https://api.deepseek.com/anthropic"
+$env:ANTHROPIC_AUTH_TOKEN="sk-ff4e91ff70e94ce290058915c933fcbe"
+$env:ANTHROPIC_MODEL="deepseek-v4-pro[1m]"
+$env:ANTHROPIC_DEFAULT_OPUS_MODEL="deepseek-v4-pro[1m]"
+$env:ANTHROPIC_DEFAULT_SONNET_MODEL="deepseek-v4-pro[1m]"
+$env:ANTHROPIC_DEFAULT_HAIKU_MODEL="deepseek-v4-flash"
+$env:CLAUDE_CODE_SUBAGENT_MODEL="deepseek-v4-flash"
+$env:CLAUDE_CODE_EFFORT_LEVEL="max" -->

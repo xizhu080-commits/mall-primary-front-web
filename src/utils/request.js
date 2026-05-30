@@ -8,18 +8,13 @@ const request = axios.create({
 // 请求拦截器
 request.interceptors.request.use(
   (config) => {
-    // 添加 token
     const identityInfoStr = localStorage.getItem('mall-user_merchant-info')
-
-    // ✅ 修改点：先判断是否登录了，如果没有登录就不添加 Authorization 头，避免发送无效的 token 导致请求失败
     if (identityInfoStr) {
       const identityInfo = JSON.parse(identityInfoStr)
-      // ✅ 修改点：再判断解析后的对象是否存在 token
       if (identityInfo && identityInfo.token) {
         config.headers.Authorization = `Bearer ${identityInfo.token}`
       }
     }
-
     return config
   },
   (error) => {
@@ -33,6 +28,14 @@ request.interceptors.response.use(
     return response.data
   },
   (error) => {
+    // 判断 token 过期（401 未授权）
+    if (error.response?.status === 4122100) {
+      // 清除过期的用户信息
+      localStorage.removeItem('mall-user_merchant-info')
+      localStorage.removeItem('recent_products')
+      localStorage.removeItem('selected_shop_info')
+    }
+
     console.error('请求错误:', error)
     return Promise.reject(error)
   },

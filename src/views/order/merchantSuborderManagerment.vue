@@ -445,11 +445,11 @@
           <div class="order-header">
             <div class="header-left">
               <span class="order-date">{{ order.createTime }}</span>
-              <span class="order-id">订单号：{{ order.orderNo }}</span>
+              <span class="order-id">订单号：{{ order.suborderId }}</span>
               <span class="shop-tag">{{ order.shopName }}</span>
             </div>
             <div class="header-right">
-              <span class="buyer-info">买家：{{ order.buyerName }} {{ order.buyerPhone }}</span>
+              <span class="buyer-info">买家：{{ order.userName }} {{ order.receiverPhone }}</span>
               <span class="order-status" :class="getStatusClass(order.status)">
                 {{ getStatusText(order.status) }}
               </span>
@@ -472,26 +472,31 @@
           </div>
 
           <div class="order-footer">
-            <div class="footer-left">
+            <div class="footer-info">
               <span>共 {{ order.products.length }} 件商品</span>
               <span class="divider">|</span>
               <span
-                >实付 <span class="total-amount">¥{{ formatMoney(order.totalAmount) }}</span></span
+                >实付 <span class="total-amount">¥{{ formatMoney(order.payAmount) }}</span></span
               >
               <span class="divider">|</span>
-              <span>付款方式：{{ order.paymentMethod || '在线支付' }}</span>
+              <span>付款方式：{{ order.payType || '在线支付' }}</span>
               <span class="divider">|</span>
               <span>物流：{{ order.logistics?.company || '暂无' }}</span>
               <span class="divider">|</span>
               <span>收货人：{{ order.receiverName }}</span>
+              <span class="divider">|</span>
+              <span>联系电话：{{ order.receiverPhone || '暂无' }}</span>
+              <span class="divider">|</span>
+              <span>收货地址：{{ order.address || '暂无' }}</span>
             </div>
-            <div class="footer-right">
+            <div class="footer-actions">
               <button
                 class="btn-outline-small"
                 @click="viewSuborderDetail(order.id, order.suborderId)"
               >
                 查看详情
               </button>
+              <button class="btn-outline-small" @click="handleTalkToUser(order)">联系客户</button>
               <button
                 v-if="order.status === 'pending'"
                 class="btn-primary-small"
@@ -519,6 +524,20 @@
                 @click="viewReview(order.id)"
               >
                 查看评价
+              </button>
+              <button
+                v-if="order.status === 'cancelled'"
+                class="btn-text"
+                @click="viewSuborderDetail(order.id, order.suborderId)"
+              >
+                查看详情
+              </button>
+              <button
+                v-if="order.status === 'refund'"
+                class="btn-refund-handle"
+                @click="openRefundDetailModal(order)"
+              >
+                处理退款
               </button>
             </div>
           </div>
@@ -573,31 +592,184 @@
     </div>
 
     <!-- 发货弹窗 -->
+    <!-- 发货弹窗 -->
+    <!-- 发货弹窗 - 横向长方形布局 -->
+    <!-- 发货弹窗 - 卡片式设计 -->
     <div v-if="shipModal.visible" class="modal-overlay" @click.self="closeShipModal">
-      <div class="modal-content">
+      <div class="modal-content ship-modal-design">
         <div class="modal-header">
-          <h3>填写发货信息</h3>
+          <div class="header-left">
+            <svg
+              class="header-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+            >
+              <rect x="1" y="3" width="15" height="13" />
+              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+              <circle cx="5.5" cy="18.5" r="2.5" />
+              <circle cx="18.5" cy="18.5" r="2.5" />
+            </svg>
+            <span>发货管理</span>
+          </div>
           <button class="close-btn" @click="closeShipModal">×</button>
         </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>物流公司</label>
-            <select v-model="shipModal.logisticsCompany">
-              <option value="顺丰速运">顺丰速运</option>
-              <option value="京东快递">京东快递</option>
-              <option value="中通快递">中通快递</option>
-              <option value="圆通速递">圆通速递</option>
-              <option value="韵达快递">韵达快递</option>
-            </select>
+
+        <div class="modal-body-design">
+          <!-- 第一行：订单信息 + 收货人信息 -->
+          <div class="info-row-group">
+            <!-- 订单信息卡片 -->
+            <div class="info-card">
+              <div class="card-title">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M3 6h18M6 3v3M18 3v3M5 21h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2z"
+                  />
+                </svg>
+                <span>订单信息</span>
+              </div>
+              <div class="card-body">
+                <div class="info-line">
+                  <span class="label">主订单号</span>
+                  <span class="value">{{ shipModal.orderInfo?.orderId || '-' }}</span>
+                </div>
+                <div class="info-line">
+                  <span class="label">子订单号</span>
+                  <span class="value">{{ shipModal.orderInfo?.suborderId || '-' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 收货人信息卡片 -->
+            <div class="info-card">
+              <div class="card-title">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span>收货人信息</span>
+              </div>
+              <div class="card-body">
+                <div class="info-line">
+                  <span class="label">收货人</span>
+                  <span class="value">{{ shipModal.consigneeInfo?.name || '-' }}</span>
+                </div>
+                <div class="info-line">
+                  <span class="label">手机号</span>
+                  <span class="value">{{ shipModal.consigneeInfo?.phone || '-' }}</span>
+                </div>
+                <div class="info-line">
+                  <span class="label">收货地址</span>
+                  <span class="value address">{{ shipModal.consigneeInfo?.address || '-' }}</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label>运单号</label>
-            <input type="text" v-model="shipModal.trackingNo" placeholder="请输入运单号" />
+
+          <!-- 第二行：发货人信息 + 物流信息 -->
+          <div class="info-row-group">
+            <!-- 发货人信息卡片（可编辑） -->
+            <div class="info-card editable-card">
+              <div class="card-title">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <path d="M8 12h8M12 8v8" />
+                </svg>
+                <span>发货人信息</span>
+                <span class="tip">（请填写）</span>
+              </div>
+              <div class="card-body">
+                <div class="form-line">
+                  <label>发货人姓名</label>
+                  <input
+                    type="text"
+                    v-model="shipModal.shipperInfo.name"
+                    placeholder="请输入发货人姓名"
+                  />
+                </div>
+
+                <div class="form-line">
+                  <label>发货地址</label>
+                  <textarea
+                    v-model="shipModal.shipperInfo.address"
+                    rows="2"
+                    placeholder="请输入详细发货地址"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- 物流信息卡片（可编辑） -->
+            <div class="info-card editable-card">
+              <div class="card-title">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect x="1" y="3" width="15" height="13" />
+                  <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                  <circle cx="5.5" cy="18.5" r="2.5" />
+                  <circle cx="18.5" cy="18.5" r="2.5" />
+                </svg>
+                <span>物流信息</span>
+                <span class="tip">（请填写）</span>
+              </div>
+              <div class="card-body">
+                <div class="form-line">
+                  <label>物流公司 <span class="required">*</span></label>
+                  <select v-model="shipModal.logisticCompanyName">
+                    <option value="">请选择物流公司</option>
+                    <option value="顺丰速运">顺丰速运</option>
+                    <option value="京东快递">京东快递</option>
+                    <option value="中通快递">中通快递</option>
+                    <option value="圆通速递">圆通速递</option>
+                    <option value="韵达快递">韵达快递</option>
+                    <option value="邮政EMS">邮政EMS</option>
+                    <option value="极兔速递">极兔速递</option>
+                  </select>
+                </div>
+                <div class="form-line">
+                  <label>物流公司编号 <span class="required">*</span></label>
+                  <input
+                    type="text"
+                    v-model="shipModal.logisticCompanyId"
+                    placeholder="请输入物流公司编号"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" @click="closeShipModal">取消</button>
-          <button class="btn-primary" @click="submitShipment">确认发货</button>
+
+        <div class="modal-footer-design">
+          <button class="btn-cancel" @click="closeShipModal">取消</button>
+          <button class="btn-confirm" @click="submitShipment">确认发货</button>
         </div>
       </div>
     </div>
@@ -762,90 +934,224 @@
       </div>
     </div>
 
-    <!-- 退款信息弹窗 -->
-    <div v-if="refundModalVisible" class="modal-overlay" @click.self="closeRefundModal">
-      <div class="modal-content refund-modal">
-        <div class="modal-header">
-          <h3>
-            <svg
-              class="modal-title-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-            >
+    <!-- 退款详情弹窗 - 横向设计（适配API数据） -->
+    <div
+      v-if="refundDetailModalVisible"
+      class="modal-overlay-new"
+      @click.self="closeRefundDetailModal"
+    >
+      <div class="refund-dialog-horizontal">
+        <!-- 左侧装饰区 -->
+        <div class="dialog-sidebar" :class="getRefundStatusClass(currentRefundOrder?.status)">
+          <div class="sidebar-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
               <path d="M21 12a9 9 0 1 1-9-9" />
               <polyline points="12 7 12 12 15 15" />
               <path d="M21 3v6h-6" />
             </svg>
-            退款信息
-          </h3>
-          <button class="close-btn" @click="closeRefundModal">×</button>
+          </div>
+          <div class="sidebar-text">
+            <span>退款</span>
+            <span>详情</span>
+          </div>
+          <div class="sidebar-status">{{ getRefundStatusText(currentRefundOrder?.status) }}</div>
         </div>
-        <div class="message-body">
-          <div class="message-tabs">
-            <button
-              class="tab-btn"
-              :class="{ active: activeRefundTab === 'pending' }"
-              @click="activeRefundTab = 'pending'"
-            >
-              待处理
-            </button>
-            <button
-              class="tab-btn"
-              :class="{ active: activeRefundTab === 'processing' }"
-              @click="activeRefundTab = 'processing'"
-            >
-              处理中
-            </button>
-            <button
-              class="tab-btn"
-              :class="{ active: activeRefundTab === 'completed' }"
-              @click="activeRefundTab = 'completed'"
-            >
-              已完成
-            </button>
-            <button
-              class="tab-btn"
-              :class="{ active: activeRefundTab === 'all' }"
-              @click="activeRefundTab = 'all'"
-            >
-              全部
+
+        <!-- 右侧内容区 -->
+        <div class="dialog-main">
+          <div class="dialog-header-horizontal">
+            <div class="header-left">
+              <h2>退款申请</h2>
+              <p>退款ID：{{ currentRefundOrder?.refundId || '暂无' }}</p>
+            </div>
+            <button class="close-btn-horizontal" @click="closeRefundDetailModal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </button>
           </div>
-          <div class="message-list">
-            <div v-for="item in filteredRefundList" :key="item.id" class="message-item">
-              <div class="message-icon refund-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                  <path d="M21 12a9 9 0 1 1-9-9" />
-                  <polyline points="12 7 12 12 15 15" />
-                </svg>
-              </div>
-              <div class="message-content">
-                <div class="message-title">订单号：{{ item.orderNo }}</div>
-                <div class="message-desc">退款金额：¥{{ formatMoney(item.refundAmount) }}</div>
-                <div class="message-desc">退款原因：{{ item.refundReason }}</div>
-                <div class="message-desc" v-if="item.refundDesc">
-                  问题描述：{{ item.refundDesc }}
+
+          <div class="dialog-body-horizontal" v-if="currentRefundOrder">
+            <!-- 商品区域 -->
+            <div class="product-section-horizontal">
+              <div class="product-image-large">
+                <img
+                  v-if="currentRefundOrder.productUrl"
+                  :src="currentRefundOrder.productUrl"
+                  class="product-img-large"
+                  @error="handleImageError"
+                />
+                <div v-else class="product-img-placeholder">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                    <rect x="2" y="2" width="20" height="20" rx="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <path d="M21 15l-5-5L5 21" />
+                  </svg>
                 </div>
-                <div class="message-time">申请时间：{{ item.applyTime }}</div>
               </div>
-              <div class="message-badge" :class="getRefundBadgeClass(item.status)">
-                {{ getRefundStatusText(item.status) }}
+              <div class="product-detail-large">
+                <div class="product-name-large">
+                  {{ currentRefundOrder.productName || '商品名称' }}
+                </div>
+                <div class="product-spec-large" v-if="currentRefundOrder.spec">
+                  <span
+                    v-for="(value, key) in parseSpecObject(currentRefundOrder.spec)"
+                    :key="key"
+                    class="spec-tag"
+                  >
+                    {{ key }}：{{ value }}
+                  </span>
+                </div>
               </div>
             </div>
-            <div v-if="filteredRefundList.length === 0" class="empty-message">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M21 12a9 9 0 1 1-9-9" />
-                <polyline points="12 7 12 12 15 15" />
+
+            <!-- 退款金额区域 -->
+            <div class="amount-section-horizontal">
+              <div class="amount-label-horizontal">
+                <span>退款金额</span>
+                <span class="amount-note-horizontal">（原路返回）</span>
+              </div>
+              <div class="amount-value-horizontal">
+                <span class="currency">¥</span>
+                <span class="value">{{
+                  formatMoney(parseFloat(currentRefundOrder.refundAmount || 0))
+                }}</span>
+              </div>
+            </div>
+
+            <!-- 退款原因区域 -->
+            <div class="refund-reason-section-horizontal">
+              <div class="reason-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <circle cx="12" cy="16" r="0.5" fill="currentColor" stroke="none" />
+                </svg>
+                <span>退款原因</span>
+              </div>
+              <div class="reason-content">{{ currentRefundOrder.refundReason || '暂无' }}</div>
+            </div>
+
+            <!-- 信息网格 -->
+            <div class="info-grid-horizontal">
+              <div class="info-item-horizontal">
+                <span class="item-label">订单编号</span>
+                <span class="item-value">{{ currentRefundOrder.orderId || '暂无' }}</span>
+              </div>
+              <div class="info-item-horizontal">
+                <span class="item-label">子订单号</span>
+                <span class="item-value">{{ currentRefundOrder.suborderId || '暂无' }}</span>
+              </div>
+              <div class="info-item-horizontal">
+                <span class="item-label">收货人</span>
+                <span class="item-value">{{ currentRefundOrder.receiverName || '暂无' }}</span>
+              </div>
+              <div class="info-item-horizontal">
+                <span class="item-label">联系电话</span>
+                <span class="item-value">{{ currentRefundOrder.receiverPhone || '暂无' }}</span>
+              </div>
+              <div class="info-item-horizontal">
+                <span class="item-label">收货地址</span>
+                <span class="item-value">{{ currentRefundOrder.address || '暂无' }}</span>
+              </div>
+              <div class="info-item-horizontal">
+                <span class="item-label">支付方式</span>
+                <span class="item-value">支付宝</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dialog-footer-horizontal">
+            <button
+              class="btn-reject-horizontal"
+              @click="openRejectReason"
+              :disabled="refundProcessing"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
-              <p>暂无退款信息</p>
+              拒绝退款
+            </button>
+            <button
+              class="btn-agree-horizontal"
+              @click="handleRefundAction(true)"
+              :disabled="refundProcessing"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              {{ refundProcessing ? '处理中...' : '同意退款' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 拒绝退款弹窗 -->
+    <div v-if="rejectModalVisible" class="modal-overlay-new" @click.self="closeRejectModal">
+      <div class="reject-dialog-horizontal">
+        <div class="dialog-sidebar reject-sidebar">
+          <div class="sidebar-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <circle cx="12" cy="16" r="0.5" fill="currentColor" stroke="none" />
+            </svg>
+          </div>
+          <div class="sidebar-text">
+            <span>拒绝</span>
+            <span>退款</span>
+          </div>
+        </div>
+
+        <div class="dialog-main">
+          <div class="dialog-header-horizontal">
+            <div class="header-left">
+              <h2>拒绝退款</h2>
+              <p>请填写拒绝原因，以便买家了解情况</p>
             </div>
+            <button class="close-btn-horizontal" @click="closeRejectModal">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="dialog-body-horizontal">
+            <div class="textarea-wrapper-horizontal">
+              <textarea
+                v-model="rejectReason"
+                rows="4"
+                placeholder="请详细说明拒绝退款的原因..."
+                class="reject-textarea-horizontal"
+                maxlength="200"
+              ></textarea>
+              <div class="char-count-horizontal">{{ rejectReason.length }}/200</div>
+            </div>
+          </div>
+
+          <div class="dialog-footer-horizontal reject-footer-horizontal">
+            <button class="btn-cancel-horizontal" @click="closeRejectModal">取消</button>
+            <button
+              class="btn-confirm-reject-horizontal"
+              @click="handleRefundAction(false)"
+              :disabled="refundProcessing"
+            >
+              {{ refundProcessing ? '处理中...' : '确认拒绝' }}
+            </button>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Toast 提示 -->
+    <Transition name="toast">
+      <div v-if="toast.visible" class="toast" :class="{ 'toast-error': toast.isError }">
+        {{ toast.message }}
+      </div>
+    </Transition>
     <!-- Toast 提示 -->
     <Transition name="toast">
       <div v-if="toast.visible" class="toast" :class="{ 'toast-error': toast.isError }">
@@ -859,7 +1165,9 @@
 import { ref, computed, reactive, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { get_merchant_info } from '@/api/merchant'
-
+import { ship } from '@/api/logistic'
+import { getOrCreateSession } from '@/api/message'
+import { handleRefund, getRefundDetail } from '@/api/refund'
 const router = useRouter()
 
 // === 状态管理 ===
@@ -886,14 +1194,6 @@ const orders = ref([])
 // 店铺列表 - 从后端获取
 const shopList = ref([])
 
-// 发货弹窗
-const shipModal = reactive({
-  visible: false,
-  orderId: null,
-  logisticsCompany: '顺丰速运',
-  trackingNo: '',
-})
-
 // 物流/支付/退款信息
 const userMenuVisible = ref(false)
 const logisticsModalVisible = ref(false)
@@ -905,6 +1205,13 @@ const paymentList = ref([])
 const refundModalVisible = ref(false)
 const activeRefundTab = ref('all')
 const refundList = ref([])
+
+// 退款详情弹窗状态
+const refundDetailModalVisible = ref(false)
+const currentRefundOrder = ref(null)
+const rejectModalVisible = ref(false)
+const rejectReason = ref('')
+const refundProcessing = ref(false)
 
 // 计算数量
 const logisticsCount = computed(
@@ -947,8 +1254,19 @@ const filteredRefundList = computed(() => {
 })
 
 const getRefundStatusText = (status) => {
-  const map = { pending: '待处理', processing: '处理中', completed: '已完成', rejected: '已拒绝' }
-  return map[status] || status
+  // 支持字符串状态（退款列表）和数字状态（退款详情API）
+  const map = {
+    // 字符串状态
+    pending: '待处理',
+    processing: '处理中',
+    completed: '已完成',
+    rejected: '已拒绝',
+    // 数字状态（退款详情API返回）
+    0: '退款中',
+    1: '退款成功',
+    2: '退款失败',
+  }
+  return map[status] || map[String(status)] || status
 }
 
 const getRefundBadgeClass = (status) => {
@@ -1057,19 +1375,30 @@ const fetchMerchantData = async () => {
 
       const orderList = suborderList.map((item) => ({
         id: item.suborderId,
-        orderNo: item.orderId || item.suborderId,
+        suborderId: item.suborderId,
+        orderId: item.orderId,
+        userId: item.userId,
+        shopId: item.shopId,
         createTime: item.createTime || '',
         shopName: item.shopName || '小米官方旗舰店',
-        buyerName: item.userName || '',
-        buyerPhone: item.userPhone || '',
-        statusCode: item.status,
+        userName: item.userName || '',
+        receiverPhone: item.receiverPhone || '',
         status: statusMap[item.status] || 'pending',
         totalAmount: item.payAmount || item.price || 0,
         paymentMethod: item.payType || '在线支付',
         shippingAddress: item.address || '',
         receiverName: item.receiverName || item.userName || '',
+        receiverAddress: item.address || '',
+        address: item.address || '',
         remark: item.remark || '',
-        suborderId: item.suborderId,
+        // 商品信息（用于退款弹窗显示）
+        productName: item.productName || '',
+        price: item.price || 0,
+        payAmount: item.payAmount || item.price || 0,
+        // 退款相关字段
+        refundReason: item.refundReason || '',
+        refundDesc: item.refundDesc || '',
+        refundAmount: item.refundAmount || item.payAmount || item.price || 0,
         products: [
           {
             name: item.productName || '',
@@ -1084,7 +1413,7 @@ const fetchMerchantData = async () => {
         logistics: item.logisticCompanyName
           ? {
               company: item.logisticCompanyName,
-              trackingNo: item.trackingNo || '',
+              logisticCompanyId: item.logisticId || '',
               shipTime: item.updateTime,
             }
           : null,
@@ -1095,25 +1424,23 @@ const fetchMerchantData = async () => {
       logisticsList.value = orderList
         .filter((o) => o.status === 'paid' || o.status === 'shipping')
         .map((o) => ({
-          id: o.id,
-          orderNo: o.orderNo,
+          suborderId: o.suborderId,
           receiverName: o.receiverName,
-          receiverPhone: o.buyerPhone,
+          receiverPhone: o.receiverPhone,
           address: o.shippingAddress,
           status: o.status === 'shipping' ? 'shipped' : 'pending',
-          logisticsCompany: o.logistics?.company,
-          trackingNo: o.logistics?.trackingNo,
-          shipTime: o.logistics?.shipTime,
+          logisticCompanyName: o.logistic?.companyName,
+          logisticCompanyId: o.logistic?.logisticId,
+          shipTime: o.logistic?.shipTime,
         }))
 
       paymentList.value = orderList.map((o) => ({
-        id: o.id,
-        orderNo: o.orderNo,
+        orderId: o.orderId,
         amount: o.totalAmount,
         status:
           o.status === 'pending' ? 'pending' : o.status !== 'cancelled' ? 'paid' : 'cancelled',
         paymentMethod: o.paymentMethod,
-        payTime: o.payTime,
+        payTime: o.payTime || '',
         transactionId: o.transactionId,
         expireTime: o.expireTime,
       }))
@@ -1246,6 +1573,37 @@ const getStatusClass = (status) => {
 
 const formatMoney = (val) => (val === undefined || val === null ? '0.00' : val.toFixed(2))
 
+// 处理图片加载错误
+const handleImageError = (e) => {
+  e.target.style.display = 'none'
+  const placeholder = e.target.parentElement.querySelector('.product-image-placeholder')
+  if (placeholder) {
+    placeholder.style.display = 'flex'
+  }
+}
+
+// 解析规格JSON
+const parseSpec = (spec) => {
+  try {
+    const obj = typeof spec === 'string' ? JSON.parse(spec) : spec
+    return Object.entries(obj)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join('，')
+  } catch {
+    return spec
+  }
+}
+
+// 退款详情状态样式
+const getRefundStatusClass = (status) => {
+  const map = {
+    0: 'status-pending',
+    1: 'status-success',
+    2: 'status-failed',
+  }
+  return map[status] || ''
+}
+
 // 操作函数
 const viewSuborderDetail = (orderId, suborderId) => {
   router.push(`/order/suborder/detail/${suborderId}`)
@@ -1258,34 +1616,170 @@ const confirmOrder = (id) => {
     showMessage('订单已确认，请及时发货')
   }
 }
+//=====================================================================发货==========================================================================
+// 发货弹窗
+const shipModal = reactive({
+  visible: false,
+  orderId: null,
+  suborderId: null,
+  logisticCompanyName: '',
+  logisticCompanyId: '',
+  // 订单信息（自动填入）
+  orderInfo: {
+    orderNo: '',
+    suborderId: '',
+  },
+  // 收货人信息（自动填入）
+  consigneeInfo: {
+    name: '',
+    phone: '',
+    address: '',
+  },
+  // 发货人信息（商家填写，支持记忆上一次填写的内容）
+  shipperInfo: {
+    name: '',
+    phone: '',
+    address: '',
+  },
+})
+// 修改 shipOrder 函数，填入订单信息和收货人信息
 const shipOrder = (id) => {
-  shipModal.orderId = id
-  shipModal.visible = true
-  shipModal.logisticsCompany = '顺丰速运'
-  shipModal.trackingNo = ''
+  const order = orders.value.find((o) => o.id === id)
+  if (order) {
+    console.log('点击发货，订单数据:', JSON.stringify(order, null, 2))
+    // 填入订单信息
+    shipModal.orderId = id
+    shipModal.suborderId = order.suborderId || id
+    shipModal.orderInfo = {
+      orderId: order.orderId || '',
+      suborderId: order.suborderId || id,
+    }
+    // 填入收货人信息
+    shipModal.consigneeInfo = {
+      name: order.receiverName || order.userName || '',
+      phone: order.receiverPhone || '',
+      address: order.address || '',
+    }
+    // 重置物流信息
+    shipModal.logisticCompanyName = ''
+    shipModal.logisticCompanyId = ''
+    shipModal.visible = true
+  }
 }
-const closeShipModal = () => {
-  shipModal.visible = false
-  shipModal.orderId = null
-}
-const submitShipment = () => {
-  if (!shipModal.trackingNo) {
+
+// 修改 submitShipment 函数，调用 ship API
+// 修改 submitShipment 函数
+const submitShipment = async () => {
+  // 验证必填项
+  if (!shipModal.logisticCompanyName) {
+    showMessage('请选择物流公司', true)
+    return
+  }
+  if (!shipModal.logisticCompanyId) {
     showMessage('请填写运单号', true)
     return
   }
+  if (!shipModal.shipperInfo.name) {
+    showMessage('请填写发货人姓名', true)
+    return
+  }
+  if (!shipModal.shipperInfo.address) {
+    showMessage('请填写发货地址', true)
+    return
+  }
+
   const order = orders.value.find((o) => o.id === shipModal.orderId)
-  if (order && order.status === 'paid') {
-    order.status = 'shipping'
-    order.logistics = {
-      company: shipModal.logisticsCompany,
-      trackingNo: shipModal.trackingNo,
-      shipTime: new Date().toLocaleString(),
-    }
-    updateStats()
-    showMessage('发货成功，已通知买家')
+  if (!order) {
+    showMessage('订单不存在', true)
+    return
+  }
+
+  if (order.status !== 'paid') {
+    showMessage('订单状态已变更，无法发货', true)
     closeShipModal()
+    return
+  }
+
+  try {
+    // 保存发货人信息供下次使用
+    saveShipperInfo()
+    console.log('请求发货中')
+    // 调用发货接口
+    const shipData = {
+      orderId: shipModal.orderInfo.orderId,
+      suborderId: shipModal.suborderId,
+      logisticCompanyId: shipModal.logisticCompanyId,
+      logisticCompanyName: shipModal.logisticCompanyName,
+      shipperId: order.shopId,
+      shipper: shipModal.shipperInfo.name,
+      shipperAddress: shipModal.shipperInfo.address,
+      consigneeId: order.userId || '',
+      consignee: shipModal.consigneeInfo.name,
+      consigneePhone: shipModal.consigneeInfo.phone,
+      consigneeAddress: shipModal.consigneeInfo.address,
+    }
+    console.log('发货数据:', JSON.stringify(shipData, null, 2))
+    console.log('订单详情:', {
+      orderId: order.orderId,
+      suborderId: order.suborderId,
+      userId: order.userId,
+      shopId: order.shopId,
+      orderStatus: order.status,
+    })
+
+    const response = await ship(shipData)
+
+    if (response.code === 200) {
+      // 更新本地订单状态
+      order.status = 'shipping'
+      order.logistics = {
+        company: shipModal.logisticCompanyName,
+        logisticCompanyId: shipModal.logisticCompanyId,
+        shipTime: new Date().toLocaleString(),
+      }
+      updateStats()
+      showMessage('发货成功，已通知买家')
+      closeShipModal()
+    } else {
+      showMessage(response.message || '发货失败，请重试', true)
+    }
+  } catch (error) {
+    console.error('发货失败:', error)
+    showMessage('网络错误，发货失败', true)
   }
 }
+
+// 加载上次保存的发货人信息
+const loadShipperInfo = () => {
+  const saved = localStorage.getItem('merchant_shipper_info')
+  if (saved) {
+    try {
+      const info = JSON.parse(saved)
+      shipModal.shipperInfo.name = info.name || ''
+      shipModal.shipperInfo.address = info.address || ''
+    } catch (e) {}
+  }
+}
+
+// 保存发货人信息
+const saveShipperInfo = () => {
+  if (shipModal.shipperInfo.name || shipModal.shipperInfo.address) {
+    localStorage.setItem(
+      'merchant_shipper_info',
+      JSON.stringify({
+        name: shipModal.shipperInfo.name,
+        address: shipModal.shipperInfo.address,
+      }),
+    )
+  }
+}
+// 关闭弹窗
+const closeShipModal = () => {
+  shipModal.visible = false
+  shipModal.orderId = null
+  // 不清空发货人信息，保留用于下次
+}
+
 const trackOrder = (id) => {
   const order = orders.value.find((o) => o.id === id)
   order?.logistics
@@ -1322,7 +1816,186 @@ const goToMerchantInfo = () => {
       (localStorage.getItem('identityId') || sessionStorage.getItem('identityId')),
   )
 }
+const handleTalkToUser = async (order) => {
+  if (!order) {
+    showMessage('订单信息不存在', true)
+    return
+  }
 
+  const data = {
+    partnerId: order.userId,
+    partnerName: order.userName || order.receiverName || '客户',
+    partnerAvatar:
+      order.userAvatar ||
+      'https://storage.360buyimg.com/default.image/6a645f6465665f696d675f393836323131373632333134353935323236_sma.jpg',
+    partnerType: 'USER',
+    shopId: order.shopId,
+  }
+
+  console.log('[订单列表] 联系客户参数:', data)
+  showMessage('正在联系客户...')
+
+  try {
+    const response = await getOrCreateSession(data)
+    console.log('[订单列表] 获取会话信息响应:', response)
+    console.log('[订单列表] 响应code:', response?.code)
+    console.log('[订单列表] 响应data:', response?.data)
+
+    if (response?.code === 200 && response?.data) {
+      const sessionData = response.data
+      console.log('[订单列表] 会话数据:', sessionData)
+
+      // 确保sessionId存在
+      if (!sessionData.sessionId) {
+        console.error('[订单列表] sessionId不存在，响应数据:', sessionData)
+        showMessage('获取会话信息失败，sessionId不存在', true)
+        return
+      }
+
+      // 使用与商家组件监听的事件名一致
+      const event = new CustomEvent('open-merchantChatToUser-session', { detail: sessionData })
+      window.dispatchEvent(event)
+      showMessage('正在打开聊天窗口...')
+    } else {
+      console.error('[订单列表] 获取会话信息失败，响应:', response)
+      showMessage(response?.msg || response?.message || '获取会话信息失败', true)
+    }
+  } catch (error) {
+    console.error('[订单列表] 联系客户异常:', error)
+    showMessage('网络错误，请稍后重试', true)
+  }
+}
+
+// 打开退款详情弹窗
+// 打开退款详情弹窗
+const openRefundDetailModal = async (order) => {
+  showMessage('正在获取退款信息...')
+  refundDetailModalVisible.value = true
+  try {
+    // 调用API获取详细退款信息
+    const response = await getRefundDetail({
+      suborderId: order.suborderId,
+      orderId: order.orderId,
+      userId: order.userId,
+    })
+
+    console.log('==========================[退款详情] API响应:', response)
+
+    if (response?.code === 200 && response?.data) {
+      // 合并API返回的数据
+      currentRefundOrder.value = {
+        refundId: response.data.refundId,
+        suborderId: response.data.suborderId,
+        orderId: response.data.orderId,
+        refundAmount: response.data.refundAmount,
+        refundReason: response.data.refundReason,
+        status: response.data.status, // ✅
+        receiverName: response.data.receiverName,
+        receiverPhone: response.data.receiverPhone,
+        address: response.data.address, // ✅
+        productName: response.data.productName,
+        spec: response.data.spec, // ✅
+        productUrl: response.data.productUrl,
+      }
+      console.log('[退款详情] 更新后的数据:', currentRefundOrder.value)
+    }
+  } catch (error) {
+    console.error('[退款详情] 获取退款详情失败:', error)
+    // 即使API失败，弹窗仍然显示已有的订单信息
+  }
+}
+
+// 关闭退款详情弹窗
+const closeRefundDetailModal = () => {
+  refundDetailModalVisible.value = false
+  currentRefundOrder.value = null
+}
+
+// 打开拒绝原因弹窗
+const openRejectReason = () => {
+  rejectModalVisible.value = true
+}
+
+// 关闭拒绝原因弹窗
+const closeRejectModal = () => {
+  rejectModalVisible.value = false
+  rejectReason.value = ''
+}
+
+// 处理退款（同意或拒绝）
+const handleRefundAction = async (isAgree) => {
+  if (!currentRefundOrder.value) {
+    showMessage('订单信息不存在', true)
+    return
+  }
+
+  if (!isAgree && !rejectReason.value.trim()) {
+    showMessage('请输入拒绝原因', true)
+    return
+  }
+
+  try {
+    console.log(
+      '退款申请ID:',
+      currentRefundOrder.value.refundId,
+      '子订单:',
+      currentRefundOrder.value.suborderId,
+      '主订单:',
+      currentRefundOrder.value.orderId,
+      '是否同意:',
+      isAgree,
+      '拒绝原因:',
+      rejectReason.value,
+    )
+    const response = await handleRefund({
+      refundId: currentRefundOrder.value.refundId,
+      isAgree: isAgree,
+      suborderId: currentRefundOrder.value.suborderId,
+      orderId: currentRefundOrder.value.orderId,
+      rejectReason: isAgree ? '' : rejectReason.value,
+    })
+
+    console.log('[退款处理]==================== API响应:', response)
+
+    if (response.code === 200) {
+      refundProcessing.value = true
+      // 更新本地订单状态
+      const orderIndex = orders.value.findIndex(
+        (o) => o.suborderId === currentRefundOrder.value.suborderId,
+      )
+      if (orderIndex !== -1) {
+        if (isAgree) {
+          orders.value[orderIndex].status = 'refund'
+          showMessage('已同意退款')
+        } else {
+          orders.value[orderIndex].status = 'completed'
+          showMessage('已拒绝退款')
+        }
+      }
+
+      closeRefundDetailModal()
+      closeRejectModal()
+    } else {
+      showMessage(response.message || '处理失败，请重试', true)
+    }
+  } catch (error) {
+    console.error('[退款处理] 异常:', error)
+    showMessage('网络错误，请重试', true)
+  } finally {
+    refundProcessing.value = false
+  }
+}
+// 解析规格JSON对象（返回对象格式）
+const parseSpecObject = (spec) => {
+  try {
+    if (typeof spec === 'string') {
+      return JSON.parse(spec)
+    }
+    return spec || {}
+  } catch (e) {
+    return {}
+  }
+}
 onMounted(() => {
   fetchMerchantData()
   document.addEventListener('click', handleClickOutside)
@@ -1986,19 +2659,24 @@ onUnmounted(() => {
   background: #fafbfc;
   padding: 14px 24px;
   display: flex;
+  flex-direction: row;
   justify-content: space-between;
   align-items: center;
   border-top: 1px solid #f0f0f0;
-  flex-wrap: wrap;
-  gap: 12px;
 }
-.footer-left {
+.footer-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.footer-info {
   font-size: 13px;
   color: #64748b;
   display: flex;
-  gap: 16px;
-  align-items: baseline;
-  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 .total-amount {
   font-size: 16px;
@@ -2007,11 +2685,6 @@ onUnmounted(() => {
 }
 .divider {
   color: #e2e8f0;
-}
-.footer-right {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
 }
 
 .btn-outline-small {
@@ -2423,5 +3096,794 @@ onUnmounted(() => {
   .action-label {
     display: none;
   }
+}
+
+/* 发货弹窗样式 */
+/* 横向发货弹窗样式 */
+
+/* 发货弹窗 - 卡片式设计 */
+.ship-modal-design {
+  width: 900px;
+  max-width: 90vw;
+  background: #ffffff;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.2);
+}
+
+/* 弹窗头部 */
+.ship-modal-design .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #ffffff;
+}
+
+.ship-modal-design .header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.ship-modal-design .header-icon {
+  width: 22px;
+  height: 22px;
+  stroke: #ff6700;
+  stroke-width: 1.8;
+}
+
+.ship-modal-design .close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.ship-modal-design .close-btn:hover {
+  background: #ff6700;
+  color: white;
+}
+
+/* 弹窗主体 */
+.modal-body-design {
+  padding: 24px;
+  background: #f8f9fc;
+}
+
+/* 行分组 */
+.info-row-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.info-row-group:last-child {
+  margin-bottom: 0;
+}
+
+/* 信息卡片 */
+.info-card {
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s;
+}
+
+.info-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* 卡片标题 */
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 18px;
+  background: #fafbfd;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.card-title svg {
+  stroke: #ff6700;
+  stroke-width: 1.8;
+}
+
+.card-title .tip {
+  font-size: 11px;
+  font-weight: normal;
+  color: #999;
+  margin-left: 4px;
+}
+
+/* 卡片内容 */
+.card-body {
+  padding: 16px 18px;
+}
+
+/* 信息行（只读） */
+.info-line {
+  display: flex;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.info-line:last-child {
+  margin-bottom: 0;
+}
+
+.info-line .label {
+  width: 70px;
+  flex-shrink: 0;
+  color: #888;
+  font-size: 12px;
+}
+
+.info-line .value {
+  flex: 1;
+  color: #333;
+  font-weight: 500;
+}
+
+.info-line .value.address {
+  font-weight: normal;
+  color: #666;
+  line-height: 1.4;
+}
+
+/* 表单行（可编辑） */
+.form-line {
+  margin-bottom: 16px;
+}
+
+.form-line:last-child {
+  margin-bottom: 0;
+}
+
+.form-line label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.form-line .required {
+  color: #ff4d4f;
+  margin-left: 2px;
+}
+
+.form-line input,
+.form-line select,
+.form-line textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
+  font-size: 13px;
+  outline: none;
+  transition: all 0.2s;
+  background: #ffffff;
+  font-family: inherit;
+}
+
+.form-line textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.form-line input:focus,
+.form-line select:focus,
+.form-line textarea:focus {
+  border-color: #ff6700;
+  box-shadow: 0 0 0 2px rgba(255, 103, 0, 0.1);
+}
+
+.form-line input::placeholder,
+.form-line textarea::placeholder {
+  color: #bbb;
+}
+
+/* 可编辑卡片样式 */
+.editable-card .card-title {
+  background: linear-gradient(135deg, #fff9f5 0%, #fafbfd 100%);
+}
+
+/* 底部按钮 */
+.modal-footer-design {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px 24px;
+  border-top: 1px solid #f0f0f0;
+  background: #ffffff;
+}
+
+.btn-cancel {
+  padding: 10px 28px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+  background: #e8e8e8;
+  color: #333;
+}
+
+.btn-confirm {
+  padding: 10px 32px;
+  background: linear-gradient(135deg, #ff6700, #ff5500);
+  border: none;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(255, 103, 0, 0.3);
+}
+
+.btn-confirm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 103, 0, 0.4);
+}
+
+.btn-confirm:active {
+  transform: translateY(0);
+}
+
+/* 响应式 */
+@media (max-width: 780px) {
+  .info-row-group {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .ship-modal-design {
+    width: 95vw;
+  }
+
+  .modal-body-design {
+    padding: 16px;
+  }
+
+  .info-line .label {
+    width: 65px;
+  }
+}
+
+/* 规格标签样式 */
+.product-spec-large {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.spec-tag {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #f1f5f9;
+  border-radius: 20px;
+  font-size: 12px;
+  color: #475569;
+}
+
+/* 商品区域增强 */
+.product-section-horizontal {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  border-radius: 20px;
+  margin-bottom: 24px;
+  border: 1px solid #f0f0f0;
+}
+
+.product-image-large {
+  width: 100px;
+  height: 100px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #f1f5f9;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.product-img-large {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-detail-large {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.product-name-large {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+/* 退款原因区域增强 */
+.refund-reason-section-horizontal {
+  background: #fff9f0;
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  border-left: 4px solid #f97316;
+}
+
+.reason-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.reason-header svg {
+  width: 18px;
+  height: 18px;
+  stroke: #f97316;
+}
+
+.reason-header span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #d97706;
+}
+
+.reason-content {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.5;
+  padding-left: 26px;
+}
+/* ========== 退款详情弹窗 - 横向设计 ========== */
+.modal-overlay-new {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.refund-dialog-horizontal {
+  display: flex;
+  width: 880px;
+  max-width: 90vw;
+  background: #ffffff;
+  border-radius: 28px;
+  overflow: hidden;
+  animation: fadeInScale 0.3s ease-out;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 左侧边栏 */
+.dialog-sidebar {
+  width: 130px;
+  background: linear-gradient(180deg, #ff6b35, #f97316);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: white;
+}
+
+.dialog-sidebar.status-pending {
+  background: linear-gradient(180deg, #f59e0b, #d97706);
+}
+
+.dialog-sidebar.status-success {
+  background: linear-gradient(180deg, #10b981, #059669);
+}
+
+.dialog-sidebar.status-failed {
+  background: linear-gradient(180deg, #64748b, #475569);
+}
+
+.sidebar-icon svg {
+  width: 48px;
+  height: 48px;
+  stroke: white;
+}
+
+.sidebar-text {
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  line-height: 1.3;
+}
+
+.sidebar-text span {
+  display: block;
+}
+
+.sidebar-status {
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-top: 8px;
+}
+
+/* 右侧主内容 */
+.dialog-main {
+  flex: 1;
+  background: #ffffff;
+}
+
+.dialog-header-horizontal {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24px 28px 16px 28px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.header-left h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 4px 0;
+}
+
+.header-left p {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.close-btn-horizontal {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f8fafc;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.close-btn-horizontal svg {
+  width: 16px;
+  height: 16px;
+  stroke: #94a3b8;
+  stroke-width: 2;
+}
+
+.close-btn-horizontal:hover {
+  background: #fee2e2;
+}
+
+.close-btn-horizontal:hover svg {
+  stroke: #ef4444;
+}
+
+/* 弹窗主体 */
+.dialog-body-horizontal {
+  padding: 20px 28px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* 退款金额区域 */
+.amount-section-horizontal {
+  background: linear-gradient(135deg, #fff9f0, #fff5e8);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border: 1px solid #ffe4cc;
+}
+
+.amount-label-horizontal {
+  font-size: 14px;
+  font-weight: 600;
+  color: #d97706;
+}
+
+.amount-note-horizontal {
+  font-size: 11px;
+  font-weight: normal;
+  color: #fbbf24;
+  margin-left: 8px;
+}
+
+.amount-value-horizontal {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.amount-value-horizontal .currency {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ff6b35;
+}
+
+.amount-value-horizontal .value {
+  font-size: 28px;
+  font-weight: 800;
+  color: #ff6b35;
+  letter-spacing: -1px;
+}
+
+/* 信息网格 */
+.info-grid-horizontal {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.info-item-horizontal {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-item-horizontal.full-width {
+  grid-column: span 2;
+}
+
+.item-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.item-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  word-break: break-all;
+}
+
+.status-badge-new {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.status-badge-new.status-pending {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.status-badge-new.status-success {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.status-badge-new.status-failed {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* 底部按钮 */
+.dialog-footer-horizontal {
+  display: flex;
+  gap: 12px;
+  padding: 16px 28px 24px 28px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.btn-reject-horizontal,
+.btn-agree-horizontal {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 40px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-reject-horizontal svg,
+.btn-agree-horizontal svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+}
+
+.btn-reject-horizontal {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+}
+
+.btn-reject-horizontal:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #ef4444;
+  border-color: #fecaca;
+}
+
+.btn-reject-horizontal:hover svg {
+  stroke: #ef4444;
+}
+
+.btn-agree-horizontal {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-agree-horizontal:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+}
+
+.btn-agree-horizontal svg {
+  stroke: white;
+}
+
+.btn-reject-horizontal:disabled,
+.btn-agree-horizontal:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ========== 拒绝退款弹窗 - 横向 ========== */
+.reject-dialog-horizontal {
+  display: flex;
+  width: 680px;
+  max-width: 90vw;
+  background: #ffffff;
+  border-radius: 28px;
+  overflow: hidden;
+  animation: fadeInScale 0.3s ease-out;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+}
+
+.reject-sidebar {
+  background: linear-gradient(180deg, #ef4444, #dc2626);
+}
+
+.textarea-wrapper-horizontal {
+  margin: 8px 0 4px 0;
+}
+
+.reject-textarea-horizontal {
+  width: 100%;
+  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  transition: all 0.2s;
+  background: #fafbfc;
+}
+
+.reject-textarea-horizontal:focus {
+  border-color: #ef4444;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.reject-textarea-horizontal::placeholder {
+  color: #cbd5e1;
+}
+
+.char-count-horizontal {
+  text-align: right;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 8px;
+}
+
+.reject-footer-horizontal {
+  border-top: 1px solid #f0f0f0;
+}
+
+.btn-cancel-horizontal {
+  flex: 1;
+  padding: 12px 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 40px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancel-horizontal:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.btn-confirm-reject-horizontal {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border: none;
+  border-radius: 40px;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.btn-confirm-reject-horizontal:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
+}
+
+.btn-confirm-reject-horizontal:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

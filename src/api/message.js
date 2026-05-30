@@ -33,12 +33,13 @@ export function getAllSessionList(shopId) {
 /*
  * 标记当前对话框所有消息为已读
  */
-export function markAllAsRead(sessionId) {
+export function markAllAsRead(sessionId, shopId) {
   return request({
     url: '/messageRecord/markAllAsRead',
     method: 'post',
     params: {
       sessionId: sessionId,
+      shopId: shopId,
     },
   })
 }
@@ -46,6 +47,7 @@ export function markAllAsRead(sessionId) {
 /*
  * 创建会话
  */
+//后端返回:当前用户ID,会话ID(后端拼接的),对方ID,对方名称,对方头像,对方类型,Boolean exittrue表示数据库表存在该会话,false表示数据库表不存在该会话)
 export function getOrCreateSession(data) {
   return request({
     url: '/userSession/createSession',
@@ -55,6 +57,7 @@ export function getOrCreateSession(data) {
       partnerName: data.partnerName || '',
       partnerAvatar: data.partnerAvatar || '',
       partnerType: data.partnerType || '未知',
+      shopId: data.shopId || null,
     },
   })
 }

@@ -316,7 +316,7 @@ const fetchHomeRecommendData = async () => {
     loading.value = false
   }
 }
-
+let identityType = ''
 // 检查登录状态
 const checkLoginStatus = () => {
   const userInfoStr =
@@ -328,7 +328,7 @@ const checkLoginStatus = () => {
       if (userInfo.token) {
         isLoggedIn.value = true
         const userName = userInfo.userName || userInfo.merchantName
-        const identityType = userInfo.identityType
+        identityType = userInfo.identityType
         currentRole.value = userInfo.role
         currentType.value = userInfo.identityType
         if (identityType && userName) {
@@ -364,7 +364,11 @@ const goToHome = () => {
 }
 
 const goToSuborderList = () => {
-  router.push('/order/suborder/list')
+  if (identityType == '用户') {
+    router.push('/order/suborder/list')
+  } else if (identityType == '商家') {
+    router.push('/order/suborder/managerment')
+  }
 }
 
 const goToCenter = () => {

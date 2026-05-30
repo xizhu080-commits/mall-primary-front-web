@@ -111,14 +111,12 @@
               <div class="load-more-trigger" ref="loadMoreTrigger"></div>
 
               <!-- 加载更多指示器 -->
+              <!-- 加载更多指示器 -->
               <div v-if="isLoadingMore" class="loading-more-wrapper">
                 <div class="loading-more">
-                  <div class="loading-bubble">
-                    <span class="loading-dot"></span>
-                    <span class="loading-dot"></span>
-                    <span class="loading-dot"></span>
-
-                    <span class="loading-text"> 正在加载消息... </span>
+                  <div class="loading-card">
+                    <div class="loading-spinner"></div>
+                    <span class="loading-label">加载中...</span>
                   </div>
                 </div>
               </div>
@@ -293,17 +291,23 @@ const hasMoreMessages = ref(true)
 
 // 用户信息
 const userInfo = localStorage.getItem('mall-user_merchant-info')
-const info = JSON.parse(userInfo)
-const userId = ref(info.userId)
+const info = userInfo ? JSON.parse(userInfo) : {}
+// 提取原始值，防止 localStorage 嵌套对象导致 [object Object]
+const extractPrimitive = (val) => {
+  if (val == null) return ''
+  if (typeof val !== 'object') return val
+  return val.id ?? val.userId ?? val.merchantId ?? val.value ?? ''
+}
+const userId = ref(extractPrimitive(info.userId))
 const userType = ref(info.identityType == '商家' ? 'MERCHANT' : 'USER')
-const token = ref(info.token)
-console.log('token.value:', token.value)
+const token = ref(extractPrimitive(info.token))
 // 定时器和观察者
-let statusInterval = null
 let messageRefreshInterval = null
+let connectionCheckInterval = null
 let intersectionObserver = null
-let loadMoreLock = false
 let shouldAutoScroll = true
+let reconnectAttemptCount = 0
+let isReconnecting = false
 
 // 计算属性
 const currentContact = computed(() => {
@@ -432,11 +436,17 @@ const forceScrollToBottom = async () => {
 
 const handleUserScroll = () => {
   if (!messagesContainer.value) return
+  const container = messagesContainer.value
 
   if (isNearBottom()) {
     shouldAutoScroll = true
   } else {
     shouldAutoScroll = false
+  }
+
+  // 滚动到顶部时触发加载
+  if (container.scrollTop <= 50 && !isLoadingMore.value && hasMoreMessages.value) {
+    loadMoreMessages()
   }
 }
 
@@ -444,7 +454,7 @@ const handleUserScroll = () => {
 
 const fetchSessionList = async () => {
   try {
-    const response = await getAllSessionList()
+    const response = await getAllSessionList(null)
 
     if (response.code === 200 && response.data) {
       const sessionList = response.data
@@ -476,6 +486,7 @@ const fetchSessionList = async () => {
   }
 }
 
+// ====================加载消息====================
 const loadSessionMessages = async (sessionId, beforeId = null, isLoadMore = false) => {
   if (!sessionId) return
 
@@ -567,6 +578,59 @@ const loadSessionMessages = async (sessionId, beforeId = null, isLoadMore = fals
   }
 }
 
+// ==================== 加载更多消息 ====================
+
+const loadMoreMessages = async () => {
+  if (!currentContact.value?.sessionId) return
+  if (isLoadingMore.value) return
+  if (!hasMoreMessages.value) return
+
+  isLoadingMore.value = true
+
+  const container = messagesContainer.value
+  const messages = currentMessages.value
+
+  if (!container || messages.length === 0) {
+    isLoadingMore.value = false
+    return
+  }
+
+  const scrollHeightBefore = container.scrollHeight
+  const scrollTopBefore = container.scrollTop
+  const oldestMsg = messages[0]
+  const beforeId = oldestMsg.id || ''
+
+  if (!beforeId) {
+    isLoadingMore.value = false
+    return
+  }
+
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    await loadSessionMessages(currentContact.value.sessionId, beforeId, true)
+    await nextTick()
+    const scrollHeightAfter = container.scrollHeight
+    const heightDiff = container.scrollHeight - scrollHeightBefore
+    container.scrollTop = scrollTopBefore + heightDiff
+    // 强制浏览器重新计算
+    // 微调，确保不在最顶部（防止无限触发）
+    if (container.scrollTop < 50) {
+      container.scrollTop = 50
+    }
+  } catch (error) {
+    console.error('加载更多消息失败:', error)
+  } finally {
+    isLoadingMore.value = false
+    loadMoreLock = false
+
+    setTimeout(() => {
+      if (hasMoreMessages.value) {
+        setupIntersectionObserver()
+      }
+    }, 300)
+  }
+}
+//=============================== 标记会话已读 ====================
 const markSessionAsRead = async (sessionId) => {
   if (!sessionId) return false
 
@@ -752,24 +816,70 @@ const sendMessage = async () => {
   }
 }
 
+// ==================== 外部打开聊天面板 ====================
+
+const handleOpenChat = async (event) => {
+  const data = event.detail
+  if (!data || !data.sessionId) return
+
+  let contact = contacts.value.find((c) => c.sessionId === data.sessionId)
+
+  if (!contact) {
+    contact = {
+      id: data.sessionId,
+      sessionId: data.sessionId,
+      name: data.partnerName || '客服',
+      avatar: data.partnerAvatar || getDefaultAvatar(data.partnerType),
+      partnerId: data.partnerId,
+      partnerType: data.partnerType || 'MERCHANT',
+      unreadCount: 0,
+      lastMessage: '',
+      lastMessageTime: null,
+      messages: [],
+    }
+    contacts.value.push(contact)
+  }
+
+  visible.value = true
+  await switchContact(contact)
+}
+
 // ==================== WebSocket 消息接收 ====================
 
 const handleWebSocketMessage = async (event) => {
   const notification = event.detail
-
+  console.log('=====================这里是消息接收区域=====================')
   if (!notification) return
 
   let content = ''
-  let sessionId = ''
-  let messagePublisherId = ''
-  let messagePublisherType = ''
+  let sessionId = notification.sessionId || notification.chatId || notification.conversationId || ''
+  let messagePublisherId =
+    notification.messagePublisherId || notification.senderId || notification.publisherId || ''
+  let messagePublisherType = notification.messagePublisherType || notification.senderType || ''
+
+  // wechat 消息可能用不同的字段名
+  if (!content && notification.data) {
+    content = notification.data.content || notification.data.message || ''
+    sessionId = sessionId || notification.data.sessionId || notification.data.chatId || ''
+    messagePublisherId = messagePublisherId || notification.data.senderId || ''
+    messagePublisherType = messagePublisherType || notification.data.senderType || ''
+  }
 
   try {
     if (typeof notification === 'object') {
-      content = notification.content || notification.message || JSON.stringify(notification)
-      sessionId = notification.sessionId
-      messagePublisherId = notification.messagePublisherId
-      messagePublisherType = notification.messagePublisherType
+      // 优先获取消息内容字段
+      content = content || notification.content || notification.message || notification.text
+
+      // 如果没有普通内容字段，检查是否为退款通知类型
+      if (!content && notification.type === 'REFUND_NOTIFY') {
+        // 提取title作为显示内容
+        content = notification.title || '退款通知'
+      }
+
+      // 如果还是没有内容，才用JSON字符串
+      if (!content) {
+        content = JSON.stringify(notification)
+      }
     } else {
       content = String(notification)
     }
@@ -778,7 +888,7 @@ const handleWebSocketMessage = async (event) => {
   }
 
   if (!sessionId) {
-    console.warn('收到消息但无 sessionId:', notification)
+    console.warn('收到消息但无 sessionId，完整消息:', notification)
     return
   }
 
@@ -788,106 +898,75 @@ const handleWebSocketMessage = async (event) => {
   await addMessageToContact(sessionId, content, isSelf, false, notification)
 }
 
-const updateConnectionStatus = () => {
-  wsConnected.value = webSocketService.isConnected()
-}
+//====================== WebSocket 状态变化 ====================
 
-// ==================== 加载更多消息 ====================
+const updateConnectionStatus = (status, data) => {
+  console.log('WebSocket连接状态变化:', status, data)
 
-const loadMoreMessages = async () => {
-  if (!currentContact.value?.sessionId) return
-  if (isLoadingMore.value) return
-  if (!hasMoreMessages.value) return
-  if (loadMoreLock) return
+  const isConnected = webSocketService.isConnected()
+  console.log('====================当前连接状态: ===============', isConnected)
+  wsConnected.value = isConnected
 
-  loadMoreLock = true
+  // 连接成功时重置重连计数
+  if (isConnected) {
+    reconnectAttemptCount = 0
+    console.log('WebSocket连接成功，重置重连计数')
 
-  const messages = currentMessages.value
-
-  if (messages.length === 0) {
-    loadMoreLock = false
-    return
-  }
-
-  isLoadingMore.value = true
-
-  if (intersectionObserver) {
-    try {
-      intersectionObserver.disconnect()
-    } catch (e) {
-      console.warn('disconnect observer failed', e)
+    // 连接成功时自动刷新会话列表
+    if (visible.value && contacts.value.length === 0) {
+      fetchSessionList()
     }
   }
+  // 连接断开或错误，且用户已登录
+  else if (userId.value && token.value) {
+    console.log(`🔄 连接断开 (${status}), 尝试自动重连... 当前尝试次数: ${reconnectAttemptCount}`)
 
-  const container = messagesContainer.value
+    // 增加重连计数
+    reconnectAttemptCount = Math.min(reconnectAttemptCount + 1, 10) // 最大10次
 
-  if (!container) {
-    isLoadingMore.value = false
-    setupIntersectionObserver()
-    loadMoreLock = false
-    return
-  }
+    // 指数退避：2^n * 1000 ms，最大 30 秒
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttemptCount), 30000)
 
-  const firstVisibleMessage = container.querySelector('.message-wrapper')
-  const anchorId = firstVisibleMessage?.dataset?.msgId
-  const anchorOffset = firstVisibleMessage?.getBoundingClientRect().top || 0
-  const oldestMsg = messages[0]
+    console.log(`将在 ${delay}ms 后尝试重连 (尝试 #${reconnectAttemptCount})`)
 
-  const beforeId =
-    (oldestMsg.rawData && oldestMsg.rawData.messageRecordId) ||
-    oldestMsg.messageRecordId ||
-    oldestMsg.id ||
-    ''
-
-  if (!beforeId) {
-    console.warn('无有效 beforeId，取消加载更多请求')
-    isLoadingMore.value = false
-    setupIntersectionObserver()
-    loadMoreLock = false
-    return
-  }
-
-  try {
-    await loadSessionMessages(currentContact.value.sessionId, beforeId, true)
-    await nextTick()
-
-    const newAnchorEl = container.querySelector(`[data-msg-id="${anchorId}"]`)
-    if (newAnchorEl) {
-      const newOffset = newAnchorEl.getBoundingClientRect().top
-      const diff = newOffset - anchorOffset
-      container.scrollTop += diff
-    }
-  } finally {
-    setupIntersectionObserver()
-    isLoadingMore.value = false
-    loadMoreLock = false
+    setTimeout(() => {
+      if (!webSocketService.isConnected()) {
+        console.log(`执行重连尝试 #${reconnectAttemptCount}`)
+        webSocketService.connect(userId.value, token.value, null, userType.value).catch((err) => {
+          console.error('重连尝试失败:', err)
+          // 触发新的状态更新以继续重连流程
+          updateConnectionStatus('failed', err)
+        })
+      }
+    }, delay)
   }
 }
 
 const setupIntersectionObserver = () => {
   if (intersectionObserver) {
     intersectionObserver.disconnect()
+    intersectionObserver = null
   }
+
+  if (!loadMoreTrigger.value) return
+  if (!hasMoreMessages.value) return
+  if (isLoadingMore.value) return
 
   intersectionObserver = new IntersectionObserver(
     (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && hasMoreMessages.value && !isLoadingMore.value) {
-          loadMoreMessages()
-        }
-      })
+      const entry = entries[0]
+      if (entry && entry.isIntersecting && !isLoadingMore.value && hasMoreMessages.value) {
+        loadMoreMessages()
+      }
     },
     {
       threshold: 0.1,
-      rootMargin: '50px',
+      rootMargin: '100px',
     },
   )
 
-  if (loadMoreTrigger.value) {
-    intersectionObserver.observe(loadMoreTrigger.value)
-  }
+  intersectionObserver.observe(loadMoreTrigger.value)
 }
-
 // ==================== UI 交互 ====================
 
 const switchContact = async (contact) => {
@@ -933,9 +1012,30 @@ const testConnection = () => {
   wsConnected.value = webSocketService.isConnected()
   console.log(wsConnected.value)
   if (!webSocketService.isConnected()) {
-    webSocketService.connect(userId.value, token.value, null)
+    webSocketService.connect(userId.value, token.value, null, userType.value)
+    console.log('连接后:', wsConnected.value)
   } else {
     fetchSessionList()
+  }
+}
+
+// =================== 辅助方法连接 ====================
+const connectWebSocket = async () => {
+  console.log('🔌 connectWebSocket')
+
+  if (!userId.value || !token.value) {
+    console.warn('缺少连接参数', { userId: userId.value, hasToken: !!token.value })
+    return false
+  }
+
+  try {
+    // 用 shopId 作为 userId
+    const result = await webSocketService.connect(userId.value, token.value, null, 'USER')
+    console.log('🔌 connectWebSocket 完成')
+    return true
+  } catch (e) {
+    console.error('WebSocket连接失败:', e)
+    return false
   }
 }
 // ==================== 生命周期 ====================
@@ -962,13 +1062,44 @@ const startMessageRefresh = () => {
 }
 
 onMounted(async () => {
-  console.log('当前登录用户信息:', { 用户端userId: userId.value, 用户端token: token.value })
-  // ✅ 添加：主动建立 WebSocket 连接
-  if (!webSocketService.isConnected() && userId.value && token.value) {
-    console.log('主动建立 WebSocket 连接')
-    await webSocketService.connect(userId.value, token.value, null)
+  console.log('当前登录用户信息:', { userId: userId.value, token: token.value })
+
+  // 先注册连接监听器，确保能捕获连接状态变化
+  webSocketService.addConnectionListener(updateConnectionStatus)
+
+  // 建立 WebSocket 连接
+  const connectAndFetch = async () => {
+    if (!userId.value || !token.value) {
+      console.warn('缺少用户信息，无法建立连接')
+      return
+    }
+
+    try {
+      console.log('🔌 尝试建立 WebSocket 连接...')
+      await webSocketService.connect(userId.value, token.value, null, userType.value)
+      console.log('✅ WebSocket 连接成功')
+
+      // 连接成功后再加载会话列表
+      await fetchSessionList()
+    } catch (e) {
+      console.error('❌ WebSocket连接失败:', e)
+
+      // 连接失败，2秒后重试
+      setTimeout(() => {
+        if (!webSocketService.isConnected()) {
+          connectAndFetch()
+        }
+      }, 2000)
+    }
   }
 
+  await connectAndFetch()
+
+  // 监听外部打开聊天面板事件（从订单页联系客服触发）
+  window.addEventListener('open-userChatToMerchant-session', handleOpenChat)
+
+  // 监听消息事件（chat-message 是 WebSocket 聊天消息的正确事件名）
+  window.addEventListener('chat-message', handleWebSocketMessage)
   window.addEventListener('websocket-message', handleWebSocketMessage)
   window.addEventListener('user-payment-notification', handleWebSocketMessage)
   window.addEventListener('user-refund-notification', handleWebSocketMessage)
@@ -982,24 +1113,17 @@ onMounted(async () => {
   window.addEventListener('topic-wechat-notification', handleWebSocketMessage)
   window.addEventListener('topic-wechat-alias-notification', handleWebSocketMessage)
 
-  webSocketService.addConnectionListener(updateConnectionStatus)
-
-  await fetchSessionList()
-
-  statusInterval = setInterval(() => {
-    wsConnected.value = webSocketService.isConnected()
-  }, 1000)
-
   startMessageRefresh()
 
   await nextTick()
   if (messagesContainer.value) {
     messagesContainer.value.addEventListener('scroll', handleUserScroll)
   }
-  setupIntersectionObserver()
 })
 
 onUnmounted(() => {
+  window.removeEventListener('open-user-chat', handleOpenChat)
+  window.removeEventListener('chat-message', handleWebSocketMessage)
   window.removeEventListener('websocket-message', handleWebSocketMessage)
   window.removeEventListener('user-payment-notification', handleWebSocketMessage)
   window.removeEventListener('user-refund-notification', handleWebSocketMessage)
@@ -1015,9 +1139,6 @@ onUnmounted(() => {
 
   webSocketService.removeConnectionListener(updateConnectionStatus)
 
-  if (statusInterval) {
-    clearInterval(statusInterval)
-  }
   if (messageRefreshInterval) {
     clearInterval(messageRefreshInterval)
   }
@@ -1032,18 +1153,16 @@ onUnmounted(() => {
 })
 
 watch([visible, currentContactId], async () => {
-  if (visible.value && currentContact.value) {
-    if (currentContact.value.unreadCount > 0) {
-      await markSessionAsRead(currentContact.value.sessionId)
+  if (visible.value) {
+    if (contacts.value.length === 0) {
+      await fetchSessionList()
     }
-
-    if (isNearBottom()) {
-      shouldAutoScroll = true
-      await forceScrollToBottom()
+    if (currentContact.value) {
+      if (currentContact.value.unreadCount > 0) {
+        await markSessionAsRead(currentContact.value.sessionId)
+      }
     }
-
     await nextTick()
-    setupIntersectionObserver()
   }
 })
 </script>
@@ -1356,45 +1475,84 @@ watch([visible, currentContactId], async () => {
   height: 1px;
   margin: -1px 0 0 0;
 }
+/* ==================== 加载指示器样式 ==================== */
 
 .loading-more-wrapper {
-  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 12px 0;
+  background: linear-gradient(to bottom, #f5f5f5 60%, transparent);
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .loading-more {
   display: inline-flex;
+}
+
+.loading-card {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 10px;
   padding: 8px 16px;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 16px;
-  color: #8e8e93;
-  font-size: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 .loading-spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid #e5e5e5;
+  width: 16px;
+  height: 16px;
+  border: 2.5px solid #e5e5e5;
   border-top-color: #34c759;
+  border-right-color: #34c759;
   border-radius: 50%;
-  animation: spin 0.6s linear infinite;
+  animation: spinnerRotate 0.7s linear infinite;
 }
 
-@keyframes spin {
-  to {
+@keyframes spinnerRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
     transform: rotate(360deg);
   }
 }
 
+.loading-label {
+  font-size: 13px;
+  color: #8e8e93;
+  font-weight: 500;
+}
+
+/* 没有更多消息 */
 .no-more-messages {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   text-align: center;
-  padding: 16px 0;
+  padding: 12px 0;
+  background: #f5f5f5;
   color: #c6c6c8;
   font-size: 11px;
 }
+
+/* 删除旧的 loading-bubble 和 loading-dot 样式 */
+/* 删除 @keyframes loadingBounce */
 
 .message-wrapper {
   display: flex;

@@ -1,5 +1,5 @@
 <template>
-  <div class="orders-page">
+  <div class="order-detail-page">
     <!-- 顶部导航栏 -->
     <div class="navbar">
       <div class="nav-content">
@@ -26,150 +26,19 @@
               />
             </svg>
           </div>
-          <span>JD-Style生态商城</span>
+          <span>京东生态商城</span>
         </div>
-        <div class="nav-links">
-          <div class="nav-item" @click="goToHome">
+        <div class="nav-search">
+          <input
+            type="text"
+            placeholder="搜索商品..."
+            v-model="searchKeyword"
+            @keyup.enter="searchProduct"
+          />
+          <button @click="searchProduct">
             <svg
               width="18"
               height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-            <span>首页</span>
-          </div>
-          <div class="nav-item active" @click="goToOrders">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M3 6h18M6 3v3M18 3v3M5 21h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2z"
-              />
-              <path d="M9 13h6M12 10v6" />
-            </svg>
-            <span>我的订单</span>
-          </div>
-          <div class="nav-item" @click="goToProfile">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            <span>个人中心</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="orders-container">
-      <!-- 1. 顶部标题栏 -->
-      <div class="page-header">
-        <h2>我的订单</h2>
-        <div class="header-stats">
-          <span class="stat-item">累计消费 ¥{{ formatMoney(totalConsumption) }}</span>
-          <span class="stat-divider">|</span>
-          <span class="stat-item">订单总数 {{ orders.length }}</span>
-        </div>
-      </div>
-
-      <!-- 2. 订单状态导航 (增加数量徽章) -->
-      <div class="order-tabs">
-        <div class="tabs-left">
-          <a
-            href="#"
-            class="tab-item"
-            :class="{ active: activeTab === 'all' }"
-            @click.prevent="setActiveTab('all')"
-          >
-            全部订单
-            <span class="badge" v-if="orders.length > 0">{{ orders.length }}</span>
-          </a>
-          <a
-            href="#"
-            class="tab-item"
-            :class="{ active: activeTab === '1' }"
-            @click.prevent="setActiveTab('1')"
-          >
-            待付款
-            <span class="badge" v-if="statusCounts['1'] > 0">{{ statusCounts['1'] }}</span>
-          </a>
-          <a
-            href="#"
-            class="tab-item"
-            :class="{ active: activeTab === '2' }"
-            @click.prevent="setActiveTab('2')"
-          >
-            待发货
-            <span class="badge" v-if="statusCounts['2'] > 0">{{ statusCounts['2'] }}</span>
-          </a>
-          <a
-            href="#"
-            class="tab-item"
-            :class="{ active: activeTab === '3' }"
-            @click.prevent="setActiveTab('3')"
-          >
-            待收货
-            <span class="badge" v-if="statusCounts['3'] > 0">{{ statusCounts['3'] }}</span>
-          </a>
-          <a
-            href="#"
-            class="tab-item"
-            :class="{ active: activeTab === '4' }"
-            @click.prevent="setActiveTab('4')"
-          >
-            已完成
-            <span class="badge" v-if="statusCounts['4'] > 0">{{ statusCounts['4'] }}</span>
-          </a>
-          <a
-            href="#"
-            class="tab-item"
-            :class="{ active: activeTab === '5' }"
-            @click.prevent="setActiveTab('5')"
-          >
-            退款中
-            <span class="badge" v-if="statusCounts['5'] > 0">{{ statusCounts['5'] }}</span>
-          </a>
-          <a
-            href="#"
-            class="tab-item"
-            :class="{ active: activeTab === '6' }"
-            @click.prevent="setActiveTab('6')"
-          >
-            退款成功
-            <span class="badge" v-if="statusCounts['6'] > 0">{{ statusCounts['6'] }}</span>
-          </a>
-          <div class="divider"></div>
-          <a
-            href="#"
-            class="tab-item"
-            :class="{ active: activeTab === 'recycle' }"
-            @click.prevent="setActiveTab('recycle')"
-          >
-            订单回收站
-          </a>
-        </div>
-
-        <div class="tabs-right">
-          <div class="search-box">
-            <svg
-              width="16"
-              height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -178,250 +47,808 @@
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <input type="text" placeholder="商品名称 / 订单号" v-model="searchKeyword" />
+          </button>
+        </div>
+        <div class="nav-links">
+          <div class="nav-item" @click="goToHome">首页</div>
+          <div class="nav-item" @click="goToOrders">我的订单</div>
+          <div class="nav-item" @click="goToCart">
+            购物车
+            <span class="cart-badge" v-if="cartCount > 0">{{ cartCount }}</span>
           </div>
+          <div class="nav-item" @click="goToProfile">个人中心</div>
         </div>
       </div>
+    </div>
 
-      <!-- 3. 筛选栏 (增加排序选项) -->
-      <div class="filter-bar">
-        <div class="filter-group">
-          <div
-            class="filter-item"
-            :class="{ active: timeFilter === 'all' }"
-            @click="timeFilter = 'all'"
-          >
-            全部订单
-          </div>
-          <div
-            class="filter-item"
-            :class="{ active: timeFilter === 'month' }"
-            @click="timeFilter = 'month'"
-          >
-            近30天
-          </div>
-          <div
-            class="filter-item"
-            :class="{ active: timeFilter === 'quarter' }"
-            @click="timeFilter = 'quarter'"
-          >
-            近3个月
-          </div>
-        </div>
-        <div class="filter-right">
-          <!-- 排序下拉框 -->
-          <select v-model="sortType" class="sort-select">
-            <option value="time-desc">按时间 ⬇️</option>
-            <option value="time-asc">按时间 ⬆️</option>
-            <option value="amount-desc">按金额 ⬇️</option>
-            <option value="amount-asc">按金额 ⬆️</option>
-          </select>
-          <span class="filter-tip">共 {{ filteredOrders.length }} 个订单</span>
-        </div>
-      </div>
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>加载中...</p>
+    </div>
 
-      <!-- 4. 订单列表 -->
-      <div class="order-list">
-        <div v-for="order in paginatedOrders" :key="order.suborderId" class="order-card">
-          <!-- 订单头部信息 -->
-          <div class="order-header">
-            <div class="header-left">
-              <span class="date">{{ order.createTime }}</span>
-              <span class="order-id">订单号：{{ order.orderId }}</span>
-              <span class="suborder-id">子订单号：{{ order.suborderId }}</span>
+    <div v-else-if="orderDetail">
+      <!-- 店铺信息区域 -->
+      <div class="shop-header-card">
+        <div class="container">
+          <div class="shop-info-wrapper">
+            <div class="shop-avatar" @click="goToShop(orderDetail.shopId)">
+              <img
+                :src="orderDetail.shopLogo || '/default-shop-logo.png'"
+                :alt="orderDetail.shopName"
+                @error="handleImageError"
+              />
             </div>
-            <div class="header-right">
-              <!-- 2. 点击店铺名字跳转店铺详情 -->
-              <span class="shop-name" @click="goToShop(order.shopId)">{{ order.shopName }}</span>
-              <!-- 3. 删除按钮弹出自定义对话框 -->
-              <span class="delete-btn" @click="openDeleteConfirm(order.suborderId)">🗑️ 删除</span>
+            <div class="shop-details">
+              <div class="shop-name" @click="goToShop(orderDetail.shopId)">
+                {{ orderDetail.shopName }}
+              </div>
             </div>
-          </div>
 
-          <!-- 订单商品内容 -->
-          <div class="order-body">
-            <div class="product-row">
-              <div class="product-info">
-                <img :src="order.productUrl" :alt="order.productName" />
-                <div class="text">
-                  <h4>{{ order.productName }}</h4>
-                  <p class="product-sku" v-if="order.specData">规格：{{ order.specData }}</p>
-                  <p class="product-sku" v-else>规格：沙漠色钛金属 1TB</p>
-                </div>
-              </div>
-              <div class="product-price">¥{{ formatMoney(order.price) }}</div>
-              <div class="quantity">×1</div>
-              <div class="receiver">
-                <span class="receiver-name">{{ order.receiverName }}</span>
-                <span class="receiver-phone">{{ formatPhone(order.userPhone) }}</span>
-              </div>
-              <div class="total-price">¥{{ formatMoney(order.payAmount) }}</div>
-              <div class="status-col">
-                <div class="status-text" :class="getStatusClass(order.status)">
-                  {{ getStatusText(order.status) }}
-                </div>
-                <div class="detail-link" @click="viewOrderDetail(order.suborderId)">订单详情</div>
-              </div>
-              <!-- 1. 调整按钮区域：将联系客服放到查看详情旁边 -->
-              <div class="action-col">
-                <button
-                  v-if="order.status === 1"
-                  class="btn-primary"
-                  @click="payOrder(order.orderId)"
+            <div class="shop-actions">
+              <button class="btn-contact-shop" @click="handleTalkToCustomer">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
                 >
-                  立即付款
-                </button>
-                <button
-                  v-if="order.status === 3 && order.logisticCompanyName"
-                  class="btn-outline"
-                  @click="trackOrder(order.suborderId)"
-                >
-                  查看物流
-                </button>
-                <button
-                  v-if="order.status === 4 && !order.isReviewed"
-                  class="btn-text"
-                  @click="reviewOrder(order.suborderId)"
-                >
-                  评价晒单
-                </button>
-                <button class="btn-text" @click="contactService(order.shopId)">联系客服</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- 订单底部汇总 (移除了底部的联系客服按钮，已在顶部调整) -->
-          <div class="order-footer">
-            <div class="footer-left">
-              <span>共 1 件商品</span>
-              <span class="divider">|</span>
-              <span
-                >实付 <span class="total-amount">¥{{ formatMoney(order.payAmount) }}</span></span
-              >
-              <span class="divider">|</span>
-              <span>收货人：{{ order.receiverName }}</span>
-              <span class="divider">|</span>
-              <span>收货地址：{{ order.address }} {{ order.remark || '' }}</span>
-            </div>
-            <div class="footer-right">
-              <button class="btn-outline-small" @click="viewOrderDetail(order.suborderId)">
-                查看详情
-              </button>
-              <!-- 将原本在顶部的联系客服按钮添加到底部查看详情旁边，确保需求“放在查看详情的旁边” -->
-              <button class="btn-outline-small" @click="contactService(order.shopId)">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
                 联系客服
               </button>
-              <button
-                v-if="order.status === 1"
-                class="btn-primary-small"
-                @click="payOrder(order.orderId)"
-              >
-                去支付
-              </button>
-              <button
-                v-if="order.status === 3"
-                class="btn-primary-small"
-                @click="confirmReceipt(order.suborderId)"
-              >
-                确认收货
-              </button>
-              <button
-                v-if="order.status === 4 && !order.isReviewed"
-                class="btn-primary-small"
-                @click="reviewOrder(order.suborderId)"
-              >
-                写评价
-              </button>
-              <button
-                v-if="order.status === 5 || order.status === 6"
-                class="btn-outline-small"
-                @click="viewRefundDetail(order.suborderId)"
-              >
-                查看退款详情
+              <button class="btn-view-shop" @click="goToShop(orderDetail.shopId)">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="16" x2="12" y2="12" />
+                  <line x1="12" y1="8" x2="12.01" y2="8" />
+                </svg>
+                进入店铺
               </button>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- 空状态 -->
-        <div v-if="filteredOrders.length === 0" class="empty-state">
-          <svg
-            width="80"
-            height="80"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-          >
-            <path
-              d="M3 6h18M6 3v3M18 3v3M5 21h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2z"
-            />
-            <path d="M9 13h6M12 10v6" />
-          </svg>
-          <p>暂无订单</p>
-          <span>去逛逛吧，发现心仪好物</span>
+      <!-- 1. 订单状态横幅 -->
+      <!-- 1. 订单状态横幅 -->
+      <!-- 1. 订单状态横幅 -->
+      <div class="status-banner" :class="getBannerClass(orderDetail.status)">
+        <div class="container">
+          <div class="banner-content">
+            <div class="banner-left">
+              <div class="status-icon" :class="getStatusIconClass(orderDetail.status)">
+                <svg
+                  v-if="orderDetail.status === 4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                  <polyline points="22 4 12 14.01 9 11.01" />
+                </svg>
+                <svg
+                  v-else-if="orderDetail.status === 3"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"
+                  />
+                </svg>
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 8v4m0 4h.01" />
+                </svg>
+              </div>
+              <div class="banner-text">
+                <h2>{{ getStatusText(orderDetail.status) }}</h2>
+                <p>{{ getStatusDesc(orderDetail.status) }}</p>
+              </div>
+            </div>
+
+            <!-- 所有按钮都放在 banner-right 内部 -->
+            <div class="banner-right">
+              <!-- 待收货状态：显示确认收货和申请退款 -->
+              <!-- 待付款状态：显示立即付款和取消订单 -->
+              <template v-if="orderDetail.status === 1">
+                <button class="btn-pay" @click="openPaymentDialog">立即付款</button>
+                <button class="btn-cancel-order" @click="openCancelConfirm">取消订单</button>
+              </template>
+
+              <!-- 除待付款外，其他状态都显示申请退款 -->
+              <template
+                v-if="
+                  orderDetail.status !== 1 &&
+                  orderDetail.status !== 5 &&
+                  orderDetail.status !== 6 &&
+                  orderDetail.status !== 0
+                "
+              >
+                <button class="btn-refund-apply" @click="openRefundModal">申请退款</button>
+              </template>
+
+              <!-- 退款中状态：显示退款处理中和查看退款详情 -->
+              <template v-if="orderDetail.status === 5">
+                <button class="btn-refund-apply disabled" disabled>退款处理中</button>
+                <button class="btn-view-refund-detail" @click="viewRefundDetail">
+                  查看退款详情
+                </button>
+              </template>
+
+              <!-- 退款成功状态：显示已退款和查看退款详情 -->
+              <template v-if="orderDetail.status === 6">
+                <button class="btn-refund-apply disabled" disabled>已退款</button>
+                <button class="btn-view-refund-detail" @click="viewRefundDetail">
+                  查看退款详情
+                </button>
+              </template>
+
+              <!-- 已关闭状态：显示订单已关闭 -->
+              <template v-if="orderDetail.status === 0">
+                <button class="btn-refund-apply disabled" disabled>订单已关闭</button>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="container main-content">
+        <!-- 2. 进度追踪 -->
+        <div class="card progress-card">
+          <div class="progress-steps">
+            <div
+              class="step"
+              :class="{ active: orderDetail.status >= 1, completed: orderDetail.status >= 2 }"
+            >
+              <div class="step-circle">
+                <span v-if="orderDetail.status >= 2">✓</span>
+                <span v-else>1</span>
+              </div>
+              <div class="step-info">
+                <div class="step-name">提交订单</div>
+                <div class="step-time">{{ orderDetail.createTime }}</div>
+              </div>
+            </div>
+            <div class="step-line" :class="{ active: orderDetail.status >= 2 }"></div>
+            <div
+              class="step"
+              :class="{ active: orderDetail.status >= 2, completed: orderDetail.status >= 2 }"
+            >
+              <div class="step-circle">
+                <span v-if="orderDetail.status >= 2">✓</span>
+                <span v-else>2</span>
+              </div>
+              <div class="step-info">
+                <div class="step-name">付款成功</div>
+                <div class="step-time">{{ orderDetail.payTime || '等待付款' }}</div>
+              </div>
+            </div>
+            <div class="step-line" :class="{ active: orderDetail.status >= 2 }"></div>
+            <div
+              class="step"
+              :class="{ active: orderDetail.status >= 2, completed: orderDetail.status >= 3 }"
+            >
+              <div class="step-circle">
+                <span v-if="orderDetail.status >= 3">✓</span>
+                <span v-else>3</span>
+              </div>
+              <div class="step-info">
+                <div class="step-name">商品发货</div>
+                <div class="step-time">
+                  {{ orderDetail.shipperTime }}
+                </div>
+              </div>
+            </div>
+            <div class="step-line" :class="{ active: orderDetail.status >= 3 }"></div>
+            <div
+              class="step"
+              :class="{ active: orderDetail.status >= 3, completed: orderDetail.status >= 4 }"
+            >
+              <div class="step-circle">
+                <span v-if="orderDetail.status >= 4">✓</span>
+                <span v-else>4</span>
+              </div>
+              <div class="step-info">
+                <div class="step-name">配送中</div>
+                <div class="step-time">{{ orderDetail.deliveryTime || '等待配送' }}</div>
+              </div>
+            </div>
+            <div class="step-line" :class="{ active: orderDetail.status >= 4 }"></div>
+            <div
+              class="step"
+              :class="{ active: orderDetail.status >= 4, completed: orderDetail.status == 4 }"
+            >
+              <div class="step-circle">
+                <span v-if="orderDetail.status == 4">✓</span>
+                <span v-else>5</span>
+              </div>
+              <div class="step-info">
+                <div class="step-name">确认收货</div>
+                <div class="step-time">{{ orderDetail.signTime || '等待确认' }}</div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- 分页 -->
-        <div v-if="totalPages > 1" class="pagination">
-          <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-          <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
-          <button class="page-btn" :disabled="currentPage === totalPages" @click="currentPage++">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <polyline points="9 18 15 12 9 6" />
-            </svg>
+        <!-- 3. 双列布局 -->
+        <div class="grid-2">
+          <!-- 收货信息 -->
+          <div class="card info-card">
+            <div class="card-header">
+              <h3>📦 收货信息</h3>
+              <span class="edit-link" @click="editAddress">修改</span>
+            </div>
+            <div class="card-body">
+              <div class="info-row">
+                <div class="info-label">收货人</div>
+                <div class="info-value">{{ orderDetail.receiverName || '待补充' }}</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">联系电话</div>
+                <div class="info-value">
+                  {{ formatPhone(orderDetail.receiverPhone) || '待补充' }}
+                </div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">收货地址</div>
+                <div class="info-value">
+                  {{ orderDetail.address || '待补充' }} {{ orderDetail.remark || '' }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 物流信息 -->
+          <div class="card info-card">
+            <div class="card-header">
+              <h3>🚚 物流信息</h3>
+              <span class="edit-link" @click="trackLogistics" v-if="orderDetail.logisticId"
+                >查看轨迹</span
+              >
+            </div>
+            <div class="card-body">
+              <div class="info-row">
+                <div class="info-label">快递公司</div>
+                <div class="info-value">{{ orderDetail.logisticCompanyName || '暂未发货' }}</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">运单号码</div>
+                <div class="info-value">
+                  {{ orderDetail.logisticId || '暂未发货' }}
+                  <span
+                    class="copy-link"
+                    v-if="orderDetail.logisticId"
+                    @click="copyLogisticId(orderDetail.logisticId)"
+                    >复制</span
+                  >
+                </div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">支付单号</div>
+                <div class="info-value">
+                  {{ orderDetail.paymentId || '暂无' }}
+                  <span class="copy-link" @click="copyPaymentId(orderDetail.paymentId)">复制</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. 商品清单 -->
+        <div class="card product-card">
+          <div class="card-header">
+            <h3>🛍️ 商品清单</h3>
+          </div>
+          <div class="product-list">
+            <div class="product-item">
+              <div class="product-image" @click="goToProductDetail(orderDetail.spuId)">
+                <img :src="orderDetail.productUrl" :alt="orderDetail.productName" />
+              </div>
+              <div class="product-details">
+                <div class="product-title" @click="goToProductDetail(orderDetail.spuId)">
+                  {{ orderDetail.productName }}
+                </div>
+                <div class="product-sku" @click="goToProductDetail(orderDetail.spuId)">
+                  规格：{{ orderDetail.specData || '标准版' }}
+                </div>
+              </div>
+              <div class="product-price">¥{{ formatMoney(orderDetail.price) }}</div>
+              <div class="product-quantity">x1</div>
+              <div class="product-total">¥{{ formatMoney(orderDetail.price) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. 订单信息与费用 -->
+        <div class="grid-2">
+          <!-- 订单信息 -->
+          <div class="card info-card">
+            <div class="card-header">
+              <h3>📋 订单信息</h3>
+            </div>
+            <div class="card-body">
+              <div class="info-row">
+                <div class="info-label">订单编号</div>
+                <div class="info-value">
+                  {{ orderDetail.orderId }}
+                  <span class="copy-link" @click="copyOrderNo(orderDetail.orderId)">复制</span>
+                </div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">子订单号</div>
+                <div class="info-value">
+                  {{ orderDetail.suborderId }}
+                  <span class="copy-link" @click="copySuborderId(orderDetail.suborderId)"
+                    >复制</span
+                  >
+                </div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">下单时间</div>
+                <div class="info-value">{{ orderDetail.createTime }}</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">支付方式</div>
+                <div class="info-value">{{ getPayTypeText(orderDetail.payType) }}</div>
+              </div>
+              <div class="info-row">
+                <div class="info-label">支付时间</div>
+                <div class="info-value">{{ orderDetail.payTime || '未支付' }}</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 费用明细 -->
+          <div class="card price-card">
+            <div class="card-header">
+              <h3>💰 费用明细</h3>
+            </div>
+            <div class="card-body">
+              <div class="price-row">
+                <span>商品总价</span>
+                <span>¥{{ formatMoney(orderDetail.price) }}</span>
+              </div>
+              <div
+                class="price-row discount-row"
+                v-if="orderDetail.discountAmount && orderDetail.discountAmount > 0"
+              >
+                <span>折扣</span>
+                <span class="discount-value">-¥{{ formatMoney(orderDetail.discountAmount) }}</span>
+              </div>
+              <div class="price-row">
+                <span>运费</span>
+                <span>¥0.00</span>
+              </div>
+              <div class="price-row total">
+                <span>实付款</span>
+                <span class="total-amount">¥{{ formatMoney(orderDetail.payAmount) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 错误状态 -->
+    <div v-else-if="errorMsg" class="error-container">
+      <div class="error-icon">
+        <svg
+          width="80"
+          height="80"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
+      <p>{{ errorMsg }}</p>
+      <button class="btn-primary" @click="goToOrders">返回订单列表</button>
+    </div>
+
+    <!-- ========== 支付弹窗 ========== -->
+    <div v-if="paymentModalVisible" class="modal-overlay">
+      <div class="modal-container order-modal-new">
+        <div class="modal-header">
+          <h3>确认支付</h3>
+          <button class="close-btn" @click="closePaymentModal">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="order-product-section">
+            <div class="order-product-img">
+              <img :src="orderDetail?.productUrl" :alt="orderDetail?.productName" />
+            </div>
+            <div class="order-product-detail">
+              <div class="order-product-name">{{ orderDetail?.productName }}</div>
+              <div class="order-product-specs">
+                <span>规格：{{ orderDetail?.specData || '标准版' }}</span>
+              </div>
+              <div class="order-product-price">
+                <span class="price-label">单价：</span>
+                <span class="price-value">¥{{ formatMoney(orderDetail?.price) }}</span>
+                <span class="quantity-label">x1</span>
+              </div>
+              <div class="order-product-total">
+                <span>实付：</span>
+                <span class="total-price">¥{{ formatMoney(orderDetail?.payAmount) }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="order-address-section">
+            <div class="section-title">收货信息</div>
+            <div class="address-content">
+              <div class="address-line">
+                <span class="address-label">收货人：</span>
+                <span>{{ orderDetail?.receiverName }}</span>
+              </div>
+              <div class="address-line">
+                <span class="address-label">手机号码：</span>
+                <span>{{ orderDetail?.receiverPhone }}</span>
+              </div>
+              <div class="address-line">
+                <span class="address-label">收货地址：</span>
+                <span>{{ orderDetail?.address }} {{ orderDetail?.remark || '' }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="order-payment-section">
+            <div class="section-title">支付方式</div>
+            <div class="payment-options">
+              <div
+                class="payment-option"
+                :class="{ active: selectedPayment === 'balance' }"
+                @click="selectedPayment = 'balance'"
+              >
+                <div class="payment-radio">
+                  <div class="radio-inner" v-if="selectedPayment === 'balance'"></div>
+                </div>
+                <div class="payment-info">
+                  <div class="payment-name">余额支付</div>
+                  <div class="payment-desc">使用账户余额支付，安全快捷</div>
+                </div>
+                <div class="payment-icon">💰</div>
+              </div>
+              <div
+                class="payment-option"
+                :class="{ active: selectedPayment === 'alipay' }"
+                @click="selectedPayment = 'alipay'"
+              >
+                <div class="payment-radio">
+                  <div class="radio-inner" v-if="selectedPayment === 'alipay'"></div>
+                </div>
+                <div class="payment-info">
+                  <div class="payment-name">支付宝支付</div>
+                  <div class="payment-desc">推荐有支付宝账号的用户使用</div>
+                </div>
+                <div class="payment-icon">📱</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="closePaymentModal">取消</button>
+          <button class="btn-confirm" @click="submitPayment" :disabled="submitting">
+            {{ submitting ? '处理中...' : '确认支付' }}
           </button>
         </div>
       </div>
     </div>
 
-    <!-- 自定义删除确认弹窗 -->
-    <div v-if="deleteConfirm.visible" class="modal-overlay" @click.self="closeDeleteConfirm">
-      <div class="modal-container">
+    <!-- 支付宝支付二维码弹窗 -->
+    <div v-if="qrModalVisible" class="modal-overlay">
+      <div class="modal-container qr-modal-new">
         <div class="modal-header">
-          <div class="modal-icon">
+          <h3>支付宝扫码支付</h3>
+          <button class="close-btn" @click="closeQrModal">×</button>
+        </div>
+        <div class="modal-body qr-body-new">
+          <div class="qr-layout">
+            <div class="qr-left">
+              <div class="qr-code" v-if="expireSeconds > 0">
+                <img :src="qrCodeBase64" alt="支付宝支付二维码" />
+              </div>
+              <div class="qr-code-expired" v-else>
+                <div class="expired-icon">⏰</div>
+                <p class="expired-text">二维码已过期</p>
+                <button class="btn-refresh" @click="refreshQrCode" :disabled="refreshing">
+                  {{ refreshing ? '重新获取中...' : '重新获取二维码' }}
+                </button>
+              </div>
+              <div class="qr-tips">
+                <p class="qr-expire">
+                  ⏱️ 二维码剩余时间：<span class="expire-time">{{ expireSeconds }}</span> 秒
+                </p>
+                <p class="qr-note">请使用支付宝扫描二维码支付</p>
+                <p
+                  class="qr-refresh-link"
+                  @click="refreshQrCode"
+                  v-if="expireSeconds > 0 && !refreshing"
+                >
+                  <span class="refresh-text">二维码无效？</span>
+                  <span class="refresh-link">重新获取！</span>
+                </p>
+              </div>
+            </div>
+            <div class="qr-right">
+              <div class="order-info-title">订单信息</div>
+              <div class="order-info-list">
+                <div class="order-info-item">
+                  <span class="info-label">订单编号：</span>
+                  <span class="info-value order-id">{{ currentOrderId }}</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="info-label">商品名称：</span>
+                  <span class="info-value">{{ orderDetail?.productName }}</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="info-label">商品规格：</span>
+                  <span class="info-value">{{ orderDetail?.specData || '标准版' }}</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="info-label">购买数量：</span>
+                  <span class="info-value">1 件</span>
+                </div>
+                <div class="order-info-item">
+                  <span class="info-label">商品单价：</span>
+                  <span class="info-value">¥{{ formatMoney(orderDetail?.price) }}</span>
+                </div>
+                <div class="order-info-item total">
+                  <span class="info-label">支付金额：</span>
+                  <span class="info-value total-price"
+                    >¥{{ formatMoney(orderDetail?.payAmount) }}</span
+                  >
+                </div>
+              </div>
+              <div class="delivery-info-title">收货信息</div>
+              <div class="delivery-info-list">
+                <div class="delivery-info-item">
+                  <span class="info-label">收货人：</span>
+                  <span class="info-value">{{ orderDetail?.receiverName }}</span>
+                </div>
+                <div class="delivery-info-item">
+                  <span class="info-label">手机号码：</span>
+                  <span class="info-value">{{ orderDetail?.receiverPhone }}</span>
+                </div>
+                <div class="delivery-info-item">
+                  <span class="info-label">收货地址：</span>
+                  <span class="info-value address-text"
+                    >{{ orderDetail?.address }} {{ orderDetail?.remark || '' }}</span
+                  >
+                </div>
+                <div class="qr-footer-center">
+                  <button class="btn-secondary" @click="closeQrModal">关闭</button>
+                  <button class="btn-primary" @click="checkPaymentStatus">我已支付</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 支付成功动画弹窗 -->
+    <div v-if="paymentSuccessVisible" class="payment-success-overlay">
+      <div class="success-animation">
+        <div class="success-checkmark">
+          <div class="check-icon">
+            <span class="icon-line line-tip"></span>
+            <span class="icon-line line-long"></span>
+            <div class="icon-circle"></div>
+            <div class="icon-fix"></div>
+          </div>
+        </div>
+        <h3 class="success-title">支付成功！</h3>
+        <p class="success-desc">正在刷新订单状态...</p>
+      </div>
+    </div>
+
+    <!-- 退款申请弹窗 - 优化版 -->
+    <div v-if="refundModalVisible" class="modal-overlay" @click.self="closeRefundModal">
+      <div class="modal-container refund-modal-optimized">
+        <div class="modal-header">
+          <h3>
+            <svg
+              class="modal-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M21 12a9 9 0 1 1-9-9" />
+              <polyline points="12 7 12 12 15 15" />
+              <path d="M21 3v6h-6" />
+            </svg>
+            申请退款
+          </h3>
+          <button class="close-btn" @click="closeRefundModal">×</button>
+        </div>
+
+        <div class="modal-body refund-modal-body">
+          <!-- 商品信息 -->
+          <div class="refund-product-card">
+            <img
+              :src="orderDetail?.productUrl"
+              :alt="orderDetail?.productName"
+              class="product-img"
+            />
+            <div class="product-info">
+              <div class="product-name">{{ orderDetail?.productName }}</div>
+              <div class="product-spec">规格：{{ orderDetail?.specData || '标准版' }}</div>
+              <div class="product-price">
+                <span class="price">¥{{ formatMoney(orderDetail?.price) }}</span>
+                <span class="quantity">x1</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 退款金额 -->
+          <div class="form-section">
+            <div class="section-title">退款金额</div>
+            <div class="amount-display-group">
+              <span class="currency-symbol">¥</span>
+              <span class="amount-display">{{ formatMoney(orderDetail?.payAmount) }}</span>
+            </div>
+            <div class="amount-hint">可退金额：¥{{ formatMoney(orderDetail?.payAmount) }}</div>
+          </div>
+
+          <!-- 退款原因 -->
+          <div class="form-section">
+            <div class="section-title">退款原因 <span class="required">*</span></div>
+            <select v-model="refundForm.reason" class="reason-select-optimized">
+              <option value="" disabled>请选择退款原因</option>
+              <option value="不喜欢/不想要">不喜欢/不想要</option>
+              <option value="商品与描述不符">商品与描述不符</option>
+              <option value="质量问题">质量问题</option>
+              <option value="发错商品">发错商品</option>
+              <option value="少发漏发">少发漏发</option>
+              <option value="快递物流问题">快递物流问题</option>
+              <option value="七天无理由退货">七天无理由退货</option>
+              <option value="其他原因">其他原因</option>
+            </select>
+          </div>
+
+          <!-- 退款说明 -->
+          <div class="form-section">
+            <div class="section-title">退款说明</div>
+            <textarea
+              v-model="refundForm.description"
+              rows="3"
+              placeholder="请详细描述退款原因，方便商家快速处理（选填）"
+              class="desc-textarea-optimized"
+            ></textarea>
+          </div>
+
+          <!-- 上传凭证 -->
+          <div class="form-section">
+            <div class="section-title">上传凭证</div>
+            <div class="upload-area-optimized">
+              <div v-for="(img, idx) in refundForm.evidence" :key="idx" class="upload-item">
+                <img :src="img" class="upload-preview" />
+                <button class="remove-btn" @click="removeEvidence(idx)">×</button>
+              </div>
+              <div
+                class="upload-btn-optimized"
+                @click="triggerFileUpload"
+                v-if="refundForm.evidence.length < 5"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                  <line x1="12" y1="8" x2="12" y2="16" />
+                  <line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
+                <span>上传图片</span>
+                <small>（最多5张）</small>
+              </div>
+              <input
+                type="file"
+                ref="fileInput"
+                accept="image/*"
+                multiple
+                style="display: none"
+                @change="handleFileUpload"
+              />
+            </div>
+          </div>
+
+          <!-- 退款提示 -->
+          <div class="refund-tip-optimized">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span>退款申请提交后，商家将在1-3个工作日内处理，请耐心等待</span>
+          </div>
+        </div>
+
+        <div class="modal-footer-optimized">
+          <button class="btn-cancel-optimized" @click="closeRefundModal">取消</button>
+          <button class="btn-submit-optimized" @click="submitRefund" :disabled="refundSubmitting">
+            {{ refundSubmitting ? '提交中...' : '提交申请' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 退款成功/确认弹窗 -->
+    <div v-if="refundConfirmModalVisible" class="modal-overlay">
+      <div class="modal-container refund-confirm-modal">
+        <div class="modal-header">
+          <h3>退款申请已提交</h3>
+          <button class="close-btn" @click="closeRefundConfirmModal">×</button>
+        </div>
+        <div class="modal-body refund-confirm-body">
+          <div class="success-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          </div>
+          <p class="confirm-title">退款申请已提交成功！</p>
+          <p class="confirm-desc">请耐心等待商家处理，处理结果将通过消息通知您</p>
+          <div class="refund-info-box">
+            <div class="refund-info-item">
+              <span>退款金额：</span>
+              <strong>¥{{ formatMoney(refundForm.amount) }}</strong>
+            </div>
+            <div class="refund-info-item">
+              <span>退款原因：</span>
+              <span>{{ refundForm.reason }}</span>
+            </div>
+          </div>
+          <button class="btn-view-refund" @click="viewRefundRecord">查看退款记录</button>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-confirm" @click="closeRefundConfirmModal">我知道了</button>
+        </div>
+      </div>
+    </div>
+    <!-- 取消订单确认弹窗 -->
+    <div v-if="cancelConfirm.visible" class="modal-overlay" @click.self="closeCancelConfirm">
+      <div class="modal-container cancel-modal">
+        <div class="modal-header">
+          <div class="modal-icon warning-icon">
             <svg
               width="24"
               height="24"
               viewBox="0 0 24 24"
               fill="none"
-              xmlns="http://www.w3.org/2000/svg"
+              stroke="currentColor"
+              stroke-width="2"
             >
-              <path
-                d="M3 6h18M6 3v3M18 3v3M5 21h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2z"
-                stroke="currentColor"
-                stroke-width="1.5"
-              />
-              <path d="M9 13h6M12 10v6" stroke="currentColor" stroke-width="1.5" />
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
-          <h3>删除订单</h3>
+          <h3>取消订单</h3>
+          <button class="close-btn" @click="closeCancelConfirm">×</button>
         </div>
         <div class="modal-body">
-          <p>确定要删除该订单吗？</p>
-          <p class="modal-tip">删除后将移至回收站，您可以在回收站中恢复。</p>
+          <p>确定要取消该订单吗？</p>
+          <p class="modal-tip">取消订单后，订单将关闭且无法恢复，请谨慎操作。</p>
         </div>
         <div class="modal-footer">
-          <button class="modal-btn modal-btn-cancel" @click="closeDeleteConfirm">取消</button>
-          <button class="modal-btn modal-btn-confirm" @click="confirmDelete">确认删除</button>
+          <button class="modal-btn modal-btn-cancel" @click="closeCancelConfirm">再想想</button>
+          <button class="modal-btn modal-btn-confirm-cancel" @click="confirmCancelOrder">
+            确认取消
+          </button>
         </div>
       </div>
     </div>
@@ -432,54 +859,150 @@
         {{ toast.message }}
       </div>
     </Transition>
+    <!-- Toast 提示 -->
+    <Transition name="toast">
+      <div v-if="toast.visible" class="toast" :class="{ 'toast-error': toast.isError }">
+        {{ toast.message }}
+      </div>
+    </Transition>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { getSuborderList } from '@/api/order'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { getSuborderDetail } from '@/api/order'
+import { payOrder } from '@/api/payment'
+import { getOrCreateSession } from '@/api/message'
+import { applyRefund } from '@/api/refund'
 
 const router = useRouter()
-
-// 筛选状态
-const activeTab = ref('all')
+const route = useRoute()
+// 子订单ID
+const suborderId = ref(route.params.suborderId || route.query.suborderId || '')
+// 订单详情数据
+const orderDetail = ref(null)
+const loading = ref(true)
+const errorMsg = ref('')
 const searchKeyword = ref('')
-const timeFilter = ref('quarter')
-const sortType = ref('time-desc') // 新增排序类型
-const currentPage = ref(1)
-const pageSize = 5
+const cartCount = ref(0)
 
-// 订单数据
-const orders = ref([])
-const loading = ref(false)
+// 支付相关状态
+const paymentModalVisible = ref(false)
+const qrModalVisible = ref(false)
+const selectedPayment = ref('alipay')
+const submitting = ref(false)
+const refreshing = ref(false)
+const qrCodeBase64 = ref('')
+const expireSeconds = ref(120)
+const currentOrderId = ref(null)
+const paymentSuccessVisible = ref(false)
+let expireTimer = null
+let successTimer = null
 
-// 统计数据
-const totalConsumption = ref(0)
-// 各状态订单数量计算
-const statusCounts = computed(() => {
-  const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 }
-  orders.value.forEach((order) => {
-    const status = String(order.status)
-    if (counts[status] !== undefined) counts[status]++
-  })
-  return counts
-})
+const formatMoney = (val) => {
+  if (val === undefined || val === null) return '0.00'
+  return val.toFixed(2)
+}
 
-// Toast 状态
-const toast = ref({
-  visible: false,
-  message: '',
-  isError: false,
-  timer: null,
-})
+const formatPhone = (phone) => {
+  if (!phone) return ''
+  return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
+}
 
-// 自定义删除弹窗状态
-const deleteConfirm = ref({
-  visible: false,
-  suborderId: null,
-})
+const getPayTypeText = (payType) => {
+  const map = { Alipay: '支付宝', Wechat: '微信支付', UnionPay: '银联支付', CreditCard: '信用卡' }
+  return map[payType] || payType || '在线支付'
+}
 
+const getStatusText = (status) => {
+  const map = {
+    1: '待付款',
+    2: '待发货',
+    3: '已发货',
+    4: '已完成',
+    5: '退款中',
+    6: '退款成功',
+    0: '已关闭',
+  }
+  return map[status] || '未知状态'
+}
+
+const getStatusDesc = (status) => {
+  const map = {
+    1: '请尽快完成付款，逾期订单将自动关闭',
+    2: '商家正在准备商品，请耐心等待',
+    3: '商品正在配送中，请保持电话畅通',
+    4: '感谢您的购买，欢迎再次光临',
+    5: '商家正在处理退款申请，请耐心等待',
+    6: '退款已原路返回，请注意查收',
+    0: '订单已关闭，感谢您的支持',
+  }
+  return map[status] || '感谢您的支持'
+}
+
+const getBannerClass = (status) => {
+  const map = {
+    1: 'banner-pending',
+    2: 'banner-pending',
+    3: 'banner-shipping',
+    4: 'banner-completed',
+    5: 'banner-refund',
+    6: 'banner-refund',
+    0: 'banner-closed',
+  }
+  return map[status] || 'banner-default'
+}
+
+const getStatusIconClass = (status) => {
+  const map = {
+    1: 'icon-pending',
+    2: 'icon-pending',
+    3: 'icon-shipping',
+    4: 'icon-completed',
+    5: 'icon-refund',
+    6: 'icon-refund',
+    0: 'icon-closed',
+  }
+  return map[status] || ''
+}
+
+const copyOrderNo = (text) => {
+  navigator.clipboard.writeText(text)
+  showMessage('订单编号复制成功')
+}
+const copyPaymentId = (text) => {
+  navigator.clipboard.writeText(text)
+  showMessage('支付单号复制成功')
+}
+const copyLogisticId = (text) => {
+  navigator.clipboard.writeText(text)
+  showMessage('物流单号复制成功')
+}
+const copySuborderId = (text) => {
+  navigator.clipboard.writeText(text)
+  showMessage('子订单号复制成功')
+}
+const trackLogistics = () => showMessage('查看物流轨迹')
+const contactSeller = () => showMessage('联系卖家')
+const editAddress = () => showMessage('修改地址')
+const cancelOrder = () => showMessage('取消订单')
+
+const confirmReceipt = () => {
+  showMessage('确认收货成功')
+}
+
+const viewRefundDetail = () => {
+  showMessage('查看退款详情')
+}
+
+const searchProduct = () => {
+  if (searchKeyword.value.trim()) {
+    router.push(`/search?keyword=${searchKeyword.value}`)
+  }
+}
+
+const toast = ref({ visible: false, message: '', isError: false, timer: null })
 const showMessage = (message, isError = false) => {
   if (toast.value.timer) clearTimeout(toast.value.timer)
   toast.value.message = message
@@ -490,261 +1013,218 @@ const showMessage = (message, isError = false) => {
   }, 2000)
 }
 
-// 格式化金额
-const formatMoney = (val) => {
-  if (val === undefined || val === null) return '0.00'
-  return val.toFixed(2)
+const handleImageError = (event) => {
+  event.target.src = '/default-shop-logo.png'
 }
 
-// 格式化手机号
-const formatPhone = (phone) => {
-  if (!phone) return ''
-  return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
-}
-
-// 状态映射
-const getStatusText = (status) => {
-  const map = {
-    1: '待付款',
-    2: '待发货',
-    3: '待收货',
-    4: '已完成',
-    5: '退款中',
-    6: '退款成功',
-    0: '已关闭',
+const fetchOrderDetail = async () => {
+  if (!suborderId.value) {
+    errorMsg.value = '缺少订单参数'
+    loading.value = false
+    return
   }
-  return map[status] || '未知状态'
-}
-
-const getStatusClass = (status) => {
-  const map = {
-    1: 'status-pending',
-    2: 'status-pending',
-    3: 'status-shipping',
-    4: 'status-completed',
-    5: 'status-refund',
-    6: 'status-refund',
-  }
-  return map[status] || ''
-}
-
-// 时间筛选
-const isWithinTimeRange = (createTime) => {
-  if (timeFilter.value === 'all') return true
-  const now = new Date()
-  const orderDate = new Date(createTime)
-  const days = timeFilter.value === 'month' ? 30 : 90
-  const diffDays = (now - orderDate) / (1000 * 60 * 60 * 24)
-  return diffDays <= days
-}
-
-// 搜索筛选
-const isMatchSearch = (order) => {
-  if (!searchKeyword.value.trim()) return true
-  const keyword = searchKeyword.value.toLowerCase()
-  return (
-    order.orderId.toLowerCase().includes(keyword) ||
-    order.productName.toLowerCase().includes(keyword)
-  )
-}
-
-// 排序函数
-const sortOrders = (ordersToSort) => {
-  const sorted = [...ordersToSort]
-  switch (sortType.value) {
-    case 'time-asc':
-      return sorted.sort((a, b) => new Date(a.createTime) - new Date(b.createTime))
-    case 'time-desc':
-      return sorted.sort((a, b) => new Date(b.createTime) - new Date(a.createTime))
-    case 'amount-asc':
-      return sorted.sort((a, b) => a.payAmount - b.payAmount)
-    case 'amount-desc':
-      return sorted.sort((a, b) => b.payAmount - a.payAmount)
-    default:
-      return sorted
-  }
-}
-
-// 筛选后的订单 (增加排序处理)
-const filteredOrders = computed(() => {
-  let result = [...orders.value]
-
-  // 状态筛选
-  if (activeTab.value !== 'all' && activeTab.value !== 'recycle') {
-    result = result.filter((order) => order.status === parseInt(activeTab.value))
-  }
-
-  // 时间筛选
-  result = result.filter((order) => isWithinTimeRange(order.createTime))
-
-  // 搜索筛选
-  result = result.filter((order) => isMatchSearch(order))
-
-  // 排序
-  result = sortOrders(result)
-
-  return result
-})
-
-// 分页
-const totalPages = computed(() => Math.ceil(filteredOrders.value.length / pageSize))
-const paginatedOrders = computed(() => {
-  const start = (currentPage.value - 1) * pageSize
-  return filteredOrders.value.slice(start, start + pageSize)
-})
-
-// 设置标签页
-const setActiveTab = (tab) => {
-  activeTab.value = tab
-  currentPage.value = 1
-}
-
-// 监听筛选变化重置页码
-watch([activeTab, searchKeyword, timeFilter, sortType], () => {
-  currentPage.value = 1
-})
-
-// 获取订单数据
-const fetchOrders = async () => {
   loading.value = true
   try {
-    const response = await getSuborderList()
-    if (response.code === 200 && response.data) {
-      const suborderList = response.data.suborderList || []
-
-      orders.value = suborderList.map((item) => ({
-        suborderId: item.suborderId,
-        orderId: item.orderId,
-        userId: item.userId,
-        userName: item.userName,
-        receiverName: item.receiverName,
-        userPhone: item.userPhone,
-        merchantId: item.merchantId,
-        shopName: item.shopName,
-        shopId: item.shopId,
-        skuId: item.skuId,
-        specData: item.specData,
-        price: item.price,
-        discountAmount: item.discountAmount,
-        payAmount: item.payAmount,
-        productName: item.productName,
-        productUrl: item.productUrl,
-        payType: item.payType,
-        status: item.status,
-        isDeleted: item.isDeleted,
-        address: item.address,
-        remark: item.remark,
-        createTime: item.createTime,
-        updateTime: item.updateTime,
-        logisticCompanyName: item.logisticCompanyName,
-        isReviewed: false,
-      }))
-
-      // 计算总消费（已完成订单 status=4）
-      totalConsumption.value = orders.value
-        .filter((order) => order.status === 4)
-        .reduce((sum, order) => sum + order.payAmount, 0)
+    const res = await getSuborderDetail(suborderId.value)
+    if (res.code === 200 && res.data) {
+      orderDetail.value = res.data
+      console.log('后端传来的数据:', orderDetail.value)
     } else {
-      showMessage(response.msg || '获取订单列表失败', true)
+      errorMsg.value = res.msg || '获取订单详情失败'
     }
   } catch (error) {
-    console.error('获取订单列表失败:', error)
-    showMessage('网络错误，无法获取订单信息', true)
+    errorMsg.value = '网络错误，无法获取订单信息'
   } finally {
     loading.value = false
   }
 }
 
-// 自定义删除弹窗
-const openDeleteConfirm = (suborderId) => {
-  deleteConfirm.value = {
-    visible: true,
-    suborderId: suborderId,
+// ========== 支付相关函数 ==========
+
+// 打开支付弹窗
+const openPaymentDialog = () => {
+  if (!orderDetail.value) {
+    showMessage('订单信息不存在', true)
+    return
   }
+  selectedPayment.value = 'alipay'
+  paymentModalVisible.value = true
 }
 
-const closeDeleteConfirm = () => {
-  deleteConfirm.value.visible = false
-  deleteConfirm.value.suborderId = null
+// 关闭支付弹窗
+const closePaymentModal = () => {
+  paymentModalVisible.value = false
 }
 
-const confirmDelete = () => {
-  const suborderId = deleteConfirm.value.suborderId
-  if (suborderId) {
-    const index = orders.value.findIndex((order) => order.suborderId === suborderId)
-    if (index !== -1) {
-      orders.value.splice(index, 1)
-      showMessage('订单已移至回收站')
-    }
+// 提交支付
+const submitPayment = async () => {
+  if (!orderDetail.value) {
+    showMessage('订单信息不存在', true)
+    return
   }
-  closeDeleteConfirm()
-}
 
-const viewOrderDetail = (suborderId) => {
-  router.push(`/order/suborder/detail/${suborderId}`)
-}
+  submitting.value = true
+  try {
+    const payType = selectedPayment.value === 'alipay' ? 'Alipay' : 'Balance'
+    const requestData = { orderId: orderDetail.value.orderId, payType }
+    const res = await payOrder(requestData)
 
-const payOrder = (orderId) => {
-  showMessage('跳转至支付页面')
-}
+    if (res.code === 200 && res.data) {
+      currentOrderId.value = orderDetail.value.orderId
 
-const trackOrder = (suborderId) => {
-  showMessage('查看物流轨迹')
-}
-
-const confirmReceipt = (suborderId) => {
-  const order = orders.value.find((o) => o.suborderId === suborderId)
-  if (order && order.status === 3) {
-    order.status = 4
-    showMessage('确认收货成功')
-  }
-}
-
-const reviewOrder = (suborderId) => {
-  const order = orders.value.find((o) => o.suborderId === suborderId)
-  if (order) {
-    order.isReviewed = true
-    showMessage('写评价')
-  }
-}
-
-const viewRefundDetail = (suborderId) => {
-  showMessage('查看退款详情')
-}
-
-const contactService = (shopId) => {
-  showMessage('联系客服')
-}
-
-// 2. 跳转店铺详情
-const goToShop = (shopId) => {
-  if (shopId) {
-    router.push(`/shop/${shopId}`)
-    showMessage('跳转至店铺详情页')
-  } else {
-    showMessage('店铺信息有误', true)
-  }
-}
-
-// 导航函数
-const goToHome = () => {
-  router.push('/')
-}
-
-const goToOrders = () => {
-  // 当前页面
-}
-
-const goToProfile = () => {
-  const userMerchantInfo = localStorage.getItem('mall-user_merchant-info')
-  if (userMerchantInfo) {
-    try {
-      const info = JSON.parse(userMerchantInfo)
-      if (info.identityType === '用户') {
-        router.push(`/user/detail/${info.userId}`)
-      } else {
-        router.push('/profile')
+      if (selectedPayment.value === 'alipay') {
+        let qrData = res.data.qrCode || res.data.qrcode || ''
+        if (qrData) {
+          if (qrData.includes('data:image/png;base64,data:image/png;base64,')) {
+            qrData = qrData.replace(
+              'data:image/png;base64,data:image/png;base64,',
+              'data:image/png;base64,',
+            )
+          } else if (!qrData.startsWith('data:image')) {
+            qrData = `data:image/png;base64,${qrData}`
+          }
+          qrCodeBase64.value = qrData
+          qrModalVisible.value = true
+          startExpireTimer()
+          closePaymentModal()
+        } else {
+          showMessage('获取二维码失败，请重试', true)
+        }
+      } else if (selectedPayment.value === 'balance') {
+        // 余额支付直接显示成功
+        showPaymentSuccess()
       }
+    } else {
+      showMessage(res.msg || '支付失败，请重试', true)
+    }
+  } catch (error) {
+    console.error('支付异常:', error)
+    showMessage('支付失败，请重试', true)
+  } finally {
+    submitting.value = false
+  }
+}
+
+// 开始二维码倒计时
+const startExpireTimer = () => {
+  expireSeconds.value = 120
+  if (expireTimer) clearInterval(expireTimer)
+  expireTimer = setInterval(() => {
+    if (expireSeconds.value > 0) {
+      expireSeconds.value--
+    } else {
+      console.log('二维码已过期，停止倒计时')
+      clearInterval(expireTimer)
+      expireTimer = null
+    }
+  }, 1000)
+}
+
+// 刷新二维码
+const refreshQrCode = async () => {
+  if (!currentOrderId.value) {
+    showMessage('订单信息错误，请重新支付', true)
+    closeQrModal()
+    return
+  }
+
+  refreshing.value = true
+  try {
+    const payType = selectedPayment.value === 'alipay' ? 'Alipay' : 'Balance'
+    const requestData = { orderId: currentOrderId.value, payType }
+    const res = await payOrder(requestData)
+
+    if (res.code === 200 && res.data) {
+      let qrData = res.data.qrCode || res.data.qrcode || ''
+      if (qrData) {
+        if (qrData.includes('data:image/png;base64,data:image/png;base64,')) {
+          qrData = qrData.replace(
+            'data:image/png;base64,data:image/png;base64,',
+            'data:image/png;base64,',
+          )
+        } else if (qrData && !qrData.startsWith('data:image')) {
+          qrData = `data:image/png;base64,${qrData}`
+        }
+        qrCodeBase64.value = qrData
+        startExpireTimer()
+        showMessage('二维码已更新，请尽快扫码支付')
+      } else {
+        showMessage('获取二维码失败，请重试', true)
+      }
+    } else {
+      showMessage(res.msg || '获取二维码失败，请重试', true)
+    }
+  } catch (error) {
+    console.error('刷新二维码异常:', error)
+    showMessage('网络错误，请重试', true)
+  } finally {
+    refreshing.value = false
+  }
+}
+
+// 关闭二维码弹窗
+const closeQrModal = () => {
+  if (expireTimer) {
+    clearInterval(expireTimer)
+    expireTimer = null
+  }
+  qrModalVisible.value = false
+  qrCodeBase64.value = ''
+  currentOrderId.value = null
+  expireSeconds.value = 120
+  refreshing.value = false
+}
+
+// 检查支付状态（手动确认）
+const checkPaymentStatus = () => {
+  showMessage('支付成功！')
+  closeQrModal()
+  showPaymentSuccess()
+}
+
+// 显示支付成功动画
+const showPaymentSuccess = () => {
+  paymentSuccessVisible.value = true
+  if (successTimer) clearTimeout(successTimer)
+  successTimer = setTimeout(() => {
+    paymentSuccessVisible.value = false
+    // 刷新订单详情
+    fetchOrderDetail()
+    showMessage('支付成功！')
+  }, 2000)
+}
+
+// 支付成功后的刷新（监听全局事件）
+const handlePaymentNotification = (event) => {
+  const notification = event.detail
+  console.log('收到支付成功信号:', notification)
+  const orderId = notification.orderId || notification
+
+  if (currentOrderId.value && String(orderId) === String(currentOrderId.value)) {
+    if (qrModalVisible.value) {
+      closeQrModal()
+    }
+    showPaymentSuccess()
+    currentOrderId.value = null
+  }
+}
+
+const goToProductDetail = (spuId) => {
+  router.push(`/product/detail/${spuId}`)
+}
+const goToShop = (shopId) => {
+  router.push(`/shop/detail/${shopId}`)
+}
+
+const goToHome = () => router.push('/')
+const goToOrders = () => router.push('/order/suborder/list')
+const goToCart = () => router.push('/cart')
+const goToProfile = () => {
+  const userInfo = localStorage.getItem('mall-user_merchant-info')
+  if (userInfo) {
+    try {
+      const info = JSON.parse(userInfo)
+      router.push(`/user/detail/${info.userId}`)
     } catch {
       router.push('/profile')
     }
@@ -753,22 +1233,233 @@ const goToProfile = () => {
   }
 }
 
+/**
+ * 联系客服
+ */
+const handleTalkToCustomer = async () => {
+  if (!orderDetail.value) {
+    showMessage('订单信息不存在', true)
+    return
+  }
+
+  const data = {
+    partnerId: orderDetail.value.shopId,
+    partnerName: orderDetail.value.shopName,
+    partnerAvatar: orderDetail.value.shopLogo,
+    partnerType: 'MERCHANT',
+  }
+
+  console.log('[订单详情] 联系客服参数:', data)
+  showMessage('正在联系客服...')
+
+  try {
+    const response = await getOrCreateSession(data)
+    console.log('[订单详情] 获取会话信息响应:', response)
+
+    if (response.code === 200 && response.data) {
+      const event = new CustomEvent('open-userChatToMerchant-session', { detail: response.data })
+      window.dispatchEvent(event)
+      showMessage('正在打开聊天窗口...')
+    } else {
+      showMessage(response.msg || '获取会话信息失败', true)
+    }
+  } catch (error) {
+    console.error('[订单详情] 联系客服异常:', error)
+    showMessage('网络错误，请稍后重试', true)
+  }
+}
+
+// ========== 退款相关状态 ==========
+const refundModalVisible = ref(false)
+const refundConfirmModalVisible = ref(false)
+const refundSubmitting = ref(false)
+const fileInput = ref(null)
+
+const refundForm = ref({
+  amount: 0,
+  reason: '',
+  description: '',
+  evidence: [],
+})
+
+// 监听订单金额变化，自动设置退款金额
+watch(
+  () => orderDetail.value?.payAmount,
+  (newAmount) => {
+    if (newAmount) {
+      refundForm.value.amount = newAmount
+    }
+  },
+  { immediate: true },
+)
+
+// 打开退款弹窗
+const openRefundModal = () => {
+  // 重置表单
+  refundForm.value = {
+    amount: orderDetail.value?.payAmount || 0,
+    reason: '',
+    description: '',
+    evidence: [],
+  }
+  refundModalVisible.value = true
+}
+
+// 关闭退款弹窗
+const closeRefundModal = () => {
+  refundModalVisible.value = false
+}
+
+// 关闭退款确认弹窗
+const closeRefundConfirmModal = () => {
+  refundConfirmModalVisible.value = false
+  // 刷新订单详情
+  fetchOrderDetail()
+}
+
+// 触发文件上传
+const triggerFileUpload = () => {
+  fileInput.value?.click()
+}
+
+// 处理文件上传
+const handleFileUpload = (event) => {
+  const files = Array.from(event.target.files)
+  const remainingSlots = 5 - refundForm.value.evidence.length
+
+  files.slice(0, remainingSlots).forEach((file) => {
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        refundForm.value.evidence.push(e.target.result)
+      }
+      reader.readAsDataURL(file)
+    }
+  })
+
+  // 清空input，以便再次选择相同文件
+  event.target.value = ''
+}
+
+// 删除凭证图片
+const removeEvidence = (index) => {
+  refundForm.value.evidence.splice(index, 1)
+}
+
+// 提交退款申请
+const submitRefund = async () => {
+  // 验证
+  if (!refundForm.value.reason) {
+    showMessage('请选择退款原因', true)
+    return
+  }
+
+  refundSubmitting.value = true
+
+  console.log('准备提交退款申请...')
+  console.log('订单ID:', orderDetail.value.orderId)
+  console.log('子订单ID:', orderDetail.value.suborderId)
+  console.log('退款原因:', refundForm.value.reason)
+
+  try {
+    // 使用真实API调用
+    console.log('正在调用 applyRefund API...')
+    const response = await applyRefund({
+      orderId: orderDetail.value.orderId,
+      suborderId: orderDetail.value.suborderId,
+      refundReason: refundForm.value.reason,
+    })
+    console.log('API响应:', response)
+
+    if (response.code === 200) {
+      // 关闭退款弹窗
+      closeRefundModal()
+      // 显示成功确认弹窗
+      refundConfirmModalVisible.value = true
+      showMessage('退款申请已提交')
+    } else {
+      showMessage(response.message || '提交失败，请重试', true)
+    }
+  } catch (error) {
+    console.error('提交退款失败:', error)
+    showMessage('网络错误，请重试', true)
+  } finally {
+    refundSubmitting.value = false
+  }
+}
+
+// 查看退款记录
+const viewRefundRecord = () => {
+  closeRefundConfirmModal()
+  // 跳转到退款记录页面或打开退款详情
+  router.push(`/order/refund/detail/${orderDetail.value?.suborderId}`)
+  // 或者显示退款详情弹窗
+  // viewRefundDetail()
+}
+// ========== 取消订单相关状态 ==========
+const cancelConfirm = ref({
+  visible: false,
+})
+
+// 打开取消订单确认弹窗
+const openCancelConfirm = () => {
+  cancelConfirm.value.visible = true
+}
+
+// 关闭取消订单确认弹窗
+const closeCancelConfirm = () => {
+  cancelConfirm.value.visible = false
+}
+
+// 确认取消订单
+const confirmCancelOrder = async () => {
+  try {
+    // 模拟API调用 - 实际使用时替换为真实取消订单接口
+    // const response = await cancelOrder({ suborderId: orderDetail.value.suborderId })
+    await new Promise((resolve) => setTimeout(resolve, 500))
+
+    // 更新本地订单状态为已关闭 (0)
+    if (orderDetail.value) {
+      orderDetail.value.status = 0
+    }
+
+    showMessage('订单已取消')
+    closeCancelConfirm()
+  } catch (error) {
+    console.error('取消订单失败:', error)
+    showMessage('取消订单失败，请重试', true)
+  }
+}
 onMounted(() => {
-  fetchOrders()
+  fetchOrderDetail()
+  window.addEventListener('user-payment-notification', handlePaymentNotification)
+  window.addEventListener('merchant-payment-notification', handlePaymentNotification)
+})
+
+onUnmounted(() => {
+  if (expireTimer) {
+    clearInterval(expireTimer)
+    expireTimer = null
+  }
+  if (successTimer) {
+    clearTimeout(successTimer)
+    successTimer = null
+  }
+  window.removeEventListener('user-payment-notification', handlePaymentNotification)
+  window.removeEventListener('merchant-payment-notification', handlePaymentNotification)
 })
 </script>
 
 <style scoped>
-/* 样式与之前相同，增加额外样式 */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-.orders-page {
+.order-detail-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: linear-gradient(135deg, #f5f7fa 0%, #eef2f6 100%);
   font-family:
     'Inter',
     -apple-system,
@@ -778,20 +1469,19 @@ onMounted(() => {
     sans-serif;
 }
 
-/* ========== 导航栏 ========== */
+/* 导航栏 */
 .navbar {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
 }
 
 .nav-content {
-  max-width: 1280px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 12px 24px;
+  padding: 12px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -802,15 +1492,12 @@ onMounted(() => {
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  color: #ff6700;
-  font-size: 20px;
-  font-weight: 700;
 }
 
 .logo-icon {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #ff6700, #ff8c42);
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #ff6700, #ff8533);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -818,16 +1505,44 @@ onMounted(() => {
 }
 
 .logo-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   color: white;
 }
 
 .logo span {
-  background: linear-gradient(135deg, #ff6700, #ff8c42);
+  font-size: 18px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ff6700, #ffaa66);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+.nav-search {
+  display: flex;
+  align-items: center;
+  background: #f5f5f5;
+  border-radius: 40px;
+  padding: 8px 16px;
+  width: 280px;
+}
+
+.nav-search input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 14px;
+}
+
+.nav-search button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #999;
 }
 
 .nav-links {
@@ -836,262 +1551,432 @@ onMounted(() => {
 }
 
 .nav-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #e2e8f0;
   cursor: pointer;
-  padding: 8px 14px;
-  border-radius: 40px;
-  transition: all 0.2s;
+  color: #333;
   font-size: 14px;
-  font-weight: 500;
+  position: relative;
+  transition: color 0.2s;
 }
 
 .nav-item:hover {
-  background: rgba(255, 255, 255, 0.1);
   color: #ff6700;
 }
 
-.nav-item.active {
-  background: rgba(255, 103, 0, 0.2);
-  color: #ff6700;
+.cart-badge {
+  position: absolute;
+  top: -8px;
+  right: -12px;
+  background: #ff6700;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 20px;
 }
 
-/* ========== 主容器 ========== */
-.orders-container {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 24px;
-}
-
-/* 页面头部 */
-.page-header {
+/* 加载状态 */
+.loading-container {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid #f0f0f0;
+  border-top-color: #ff6700;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 状态横幅 */
+.status-banner {
+  padding: 32px 0;
   margin-bottom: 24px;
 }
 
-.page-header h2 {
+.banner-pending {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.banner-shipping {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+}
+
+.banner-completed {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+}
+
+.banner-refund {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+}
+
+.banner-default {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.banner-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.banner-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.status-icon {
+  width: 64px;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-icon svg {
+  width: 32px;
+  height: 32px;
+  stroke: white;
+}
+
+.status-icon.icon-completed svg {
+  stroke: #10b981;
+}
+
+.status-icon.icon-shipping svg {
+  stroke: #3b82f6;
+}
+
+.banner-text h2 {
   font-size: 24px;
   font-weight: 700;
+  margin-bottom: 4px;
   color: #1e293b;
 }
 
-.header-stats {
-  display: flex;
-  gap: 16px;
-  font-size: 14px;
-  color: #64748b;
+.banner-text p {
+  font-size: 13px;
+  color: #475569;
 }
 
-.stat-divider {
-  color: #e2e8f0;
-}
-
-/* 订单标签栏 */
-.order-tabs {
+/* 右侧按钮区域 - 紧凑排列 */
+.banner-right {
   display: flex;
-  justify-content: space-between;
+  gap: 12px;
   align-items: center;
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 8px 20px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
 }
 
-.tabs-left {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-
-.tab-item {
-  text-decoration: none;
-  color: #64748b;
+/* 立即付款按钮 */
+.btn-pay {
+  background: linear-gradient(135deg, #ff6700, #ff8533);
+  border: none;
+  padding: 10px 28px;
+  border-radius: 40px;
+  color: white;
   font-size: 14px;
-  font-weight: 500;
-  padding: 8px 0;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  position: relative;
-  display: inline-flex;
+  box-shadow: 0 2px 8px rgba(255, 103, 0, 0.3);
+  white-space: nowrap;
+}
+
+.btn-pay:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 103, 0, 0.4);
+}
+
+/* 确认收货按钮 */
+.btn-confirm {
+  background: linear-gradient(135deg, #ff6700, #ff8533);
+  border: none;
+  padding: 10px 24px;
+  border-radius: 40px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(255, 103, 0, 0.3);
+  white-space: nowrap;
+}
+
+.btn-confirm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 103, 0, 0.4);
+}
+
+/* 申请退款按钮 */
+.btn-refund-apply {
+  display: flex;
   align-items: center;
   gap: 6px;
-}
-
-.tab-item.active {
-  color: #ff6700;
-}
-
-.tab-item.active::after {
-  content: '';
-  position: absolute;
-  bottom: -9px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #ff6700, #ff8c42);
-  border-radius: 2px;
-}
-
-.badge {
-  background: linear-gradient(135deg, #ff6700, #ff8c42);
-  color: white;
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 20px;
-  margin-left: 6px;
-}
-
-.divider {
-  width: 1px;
-  height: 16px;
-  background: #e2e8f0;
-}
-
-.tabs-right .search-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #f1f5f9;
-  padding: 8px 16px;
-  border-radius: 40px;
-}
-
-.search-box svg {
-  color: #94a3b8;
-}
-
-.search-box input {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   border: none;
-  background: transparent;
-  outline: none;
-  font-size: 13px;
-  width: 200px;
-}
-
-.search-box input::placeholder {
-  color: #94a3b8;
-}
-
-/* 筛选栏 */
-.filter-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 12px 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-}
-
-.filter-group {
-  display: flex;
-  gap: 16px;
-}
-
-.filter-item {
-  font-size: 13px;
-  color: #475569;
+  padding: 10px 24px;
+  border-radius: 40px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  padding: 4px 12px;
-  border-radius: 20px;
   transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  white-space: nowrap;
 }
 
-.filter-item:hover {
-  background: #f1f5f9;
-  color: #ff6700;
+.btn-refund-apply:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
 }
 
-.filter-item.active {
-  background: #ff6700;
+.btn-refund-apply.refund-disabled,
+.btn-refund-apply:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn-refund-apply svg {
+  stroke: white;
+}
+
+/* 取消订单按钮 */
+.btn-cancel {
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  padding: 10px 24px;
+  border-radius: 40px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-cancel:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+/* 查看退款详情按钮 */
+.btn-view-refund-detail {
+  background: transparent;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  padding: 10px 24px;
+  border-radius: 40px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-view-refund-detail:hover {
+  background: #ef4444;
   color: white;
 }
 
-.filter-right {
-  text-align: right;
-  display: flex;
-  align-items: center;
-  gap: 16px;
+/* 主容器 */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
-.sort-select {
-  padding: 6px 12px;
-  border-radius: 20px;
-  border: 1px solid #e2e8f0;
-  background: white;
-  font-size: 13px;
-  color: #475569;
-  cursor: pointer;
-  outline: none;
-}
-
-.sort-select:hover {
-  border-color: #ff6700;
-}
-
-.filter-tip {
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-/* 订单列表 */
-.order-list {
+.main-content {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-/* 订单卡片 */
-.order-card {
-  background: #ffffff;
+/* 进度卡片 */
+.progress-card {
+  background: white;
+  border-radius: 24px;
+  padding: 28px 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.progress-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.step-circle {
+  width: 44px;
+  height: 44px;
+  background: #e2e8f0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #94a3b8;
+  transition: all 0.3s;
+}
+
+.step.active .step-circle {
+  background: linear-gradient(135deg, #ff6700, #ff8533);
+  color: white;
+  box-shadow: 0 4px 12px rgba(255, 103, 0, 0.3);
+}
+
+.step.completed .step-circle {
+  background: #10b981;
+  color: white;
+}
+
+.step-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.step-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.step-time {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.step-line {
+  flex: 1;
+  height: 2px;
+  background: #e2e8f0;
+  margin: 0 8px;
+}
+
+.step-line.active {
+  background: linear-gradient(90deg, #ff6700, #ff8533);
+}
+
+/* 通用卡片 */
+.card {
+  background: white;
   border-radius: 20px;
-  overflow: hidden;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  transition: all 0.2s;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  overflow: hidden;
 }
 
-.order-card:hover {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-}
-
-.order-header {
-  background: #f8fafc;
-  padding: 14px 24px;
+.card-header {
+  padding: 18px 24px;
+  background: #fafbfc;
+  border-bottom: 1px solid #f0f0f0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #f0f0f0;
 }
 
-.header-left {
+.card-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.header-actions {
   display: flex;
-  gap: 24px;
-  font-size: 13px;
-  color: #64748b;
-  flex-wrap: wrap;
-}
-
-.order-id,
-.suborder-id {
-  color: #94a3b8;
-  font-family: monospace;
-}
-
-.header-right {
-  display: flex;
+  gap: 16px;
   align-items: center;
+}
+
+.edit-link {
+  font-size: 13px;
+  color: #ff6700;
+  cursor: pointer;
+}
+
+.refund-link {
+  font-size: 13px;
+  color: #ef4444;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.refund-link:hover {
+  color: #dc2626;
+  text-decoration: underline;
+}
+
+.card-body {
+  padding: 20px 24px;
+}
+
+/* 双列布局 */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
 }
 
-.shop-name {
+/* 信息行 */
+.info-row {
+  display: flex;
+  padding: 10px 0;
+  border-bottom: 1px dashed #f0f0f0;
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-label {
+  width: 90px;
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+.info-value {
+  flex: 1;
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.copy-link {
+  margin-left: 12px;
+  color: #ff6700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* 商品卡片 */
+.product-card .card-header {
+  justify-content: space-between;
+}
+
+.shop-info,
+.to-custom {
   font-weight: 600;
   color: #1f8827;
   font-size: 14px;
@@ -1099,61 +1984,60 @@ onMounted(() => {
   transition: color 0.2s;
 }
 
-.shop-name:hover {
+.shop-info:hover,
+.to-custom:hover,
+.product-image:hover,
+.product-title:hover,
+.product-sku:hover {
   color: #ff6700;
-}
-
-.delete-btn {
-  color: #d7352f;
   cursor: pointer;
-  font-size: 13px;
-  transition: color 0.2s;
 }
 
-.delete-btn:hover {
-  color: #ef4444;
+.product-image:hover {
+  transition: transform 0.3s;
+  transform: scale(1.1);
 }
 
-/* 订单商品行 */
-.order-body {
+.product-list {
   padding: 0 24px;
 }
 
-.product-row {
+.product-item {
   display: flex;
   align-items: center;
   padding: 20px 0;
+  gap: 20px;
   border-bottom: 1px solid #f0f0f0;
-  flex-wrap: wrap;
-  gap: 12px;
 }
 
-.product-row:last-child {
+.product-item:last-child {
   border-bottom: none;
 }
 
-.product-info {
-  flex: 2.5;
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  min-width: 280px;
-}
-
-.product-info img {
-  width: 70px;
-  height: 70px;
+.product-image {
+  width: 80px;
+  height: 80px;
   border-radius: 12px;
-  object-fit: cover;
+  overflow: hidden;
   background: #f8fafc;
+  flex-shrink: 0;
 }
 
-.product-info .text h4 {
-  font-size: 14px;
-  font-weight: 500;
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-details {
+  flex: 2;
+}
+
+.product-title {
+  font-size: 15px;
+  font-weight: 600;
   color: #1e293b;
   margin-bottom: 6px;
-  line-height: 1.4;
 }
 
 .product-sku {
@@ -1164,252 +2048,81 @@ onMounted(() => {
 .product-price {
   width: 100px;
   text-align: center;
-  font-size: 14px;
   color: #475569;
+  font-size: 14px;
 }
 
-.quantity {
+.product-quantity {
   width: 60px;
   text-align: center;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.product-total {
+  width: 110px;
+  text-align: right;
+  font-weight: 700;
+  color: #ff6700;
+  font-size: 16px;
+}
+
+/* 费用卡片 */
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
   font-size: 14px;
   color: #64748b;
 }
 
-.receiver {
-  width: 140px;
-  text-align: center;
-  font-size: 13px;
-  color: #475569;
-}
-
-.receiver-name {
-  display: block;
-  font-weight: 500;
-}
-
-.receiver-phone {
-  font-size: 11px;
-  color: #94a3b8;
-}
-
-.total-price {
-  width: 100px;
-  text-align: center;
-  font-weight: 600;
-  color: #1e293b;
-  font-size: 14px;
-}
-
-.status-col {
-  width: 100px;
-  text-align: center;
-}
-
-.status-text {
-  font-size: 13px;
-  font-weight: 500;
-  margin-bottom: 6px;
-}
-
-.status-completed {
+.price-row .discount-value {
   color: #10b981;
 }
 
-.status-pending {
-  color: #f59e0b;
+.price-row.total {
+  border-top: 1px solid #f0f0f0;
+  margin-top: 8px;
+  padding-top: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
 }
 
-.status-shipping {
-  color: #3b82f6;
-}
-
-.status-refund {
-  color: #ef4444;
-}
-
-.detail-link {
-  font-size: 12px;
+.price-row.total .total-amount {
   color: #ff6700;
-  cursor: pointer;
+  font-size: 22px;
+  font-weight: 800;
 }
 
-.action-col {
-  width: 140px;
+/* 错误状态 */
+.error-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 20px;
 }
 
-.btn-text {
-  background: none;
-  border: none;
+.error-icon svg {
+  color: #cbd5e1;
+}
+
+.error-container p {
+  font-size: 16px;
   color: #64748b;
-  font-size: 12px;
-  cursor: pointer;
-  padding: 4px 8px;
-  transition: color 0.2s;
-}
-
-.btn-text:hover {
-  color: #ff6700;
-}
-
-.btn-outline {
-  background: transparent;
-  border: 1px solid #e2e8f0;
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-outline:hover {
-  border-color: #ff6700;
-  color: #ff6700;
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #ff6700, #ff8c42);
+  background: linear-gradient(135deg, #ff6700, #ff8533);
   border: none;
-  padding: 6px 16px;
-  border-radius: 20px;
+  padding: 10px 28px;
+  border-radius: 40px;
   color: white;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(255, 103, 0, 0.3);
-}
-
-/* 订单底部 */
-.order-footer {
-  background: #f8fafc;
-  padding: 14px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid #f0f0f0;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.footer-left {
-  font-size: 13px;
-  color: #64748b;
-  display: flex;
-  gap: 12px;
-  align-items: baseline;
-  flex-wrap: wrap;
-}
-
-.total-amount {
-  font-size: 16px;
-  font-weight: 700;
-  color: #ff6700;
-}
-
-.footer-right {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.btn-outline-small {
-  background: transparent;
-  border: 1px solid #e2e8f0;
-  padding: 6px 18px;
-  border-radius: 20px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-outline-small:hover {
-  border-color: #ff6700;
-  color: #ff6700;
-}
-
-.btn-primary-small {
-  background: linear-gradient(135deg, #ff6700, #ff8c42);
-  border: none;
-  padding: 6px 18px;
-  border-radius: 20px;
-  color: white;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary-small:hover {
-  transform: translateY(-1px);
-}
-
-/* 分页 */
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 20px;
-  margin-top: 28px;
-}
-
-.page-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid #e2e8f0;
-  background: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.page-btn:hover:not(:disabled) {
-  border-color: #ff6700;
-  color: #ff6700;
-}
-
-.page-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.page-info {
   font-size: 14px;
-  color: #475569;
-}
-
-/* 空状态 */
-.empty-state {
-  text-align: center;
-  padding: 80px 20px;
-  background: #ffffff;
-  border-radius: 20px;
-}
-
-.empty-state svg {
-  color: #cbd5e1;
-  margin-bottom: 20px;
-}
-
-.empty-state p {
-  font-size: 16px;
-  color: #475569;
-  margin-bottom: 8px;
-}
-
-.empty-state span {
-  font-size: 14px;
-  color: #94a3b8;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 /* Toast */
@@ -1443,7 +2156,123 @@ onMounted(() => {
   transform: translateX(-50%) translateY(20px);
 }
 
-/* 自定义删除弹窗样式 */
+/* 店铺信息卡片样式 */
+.shop-header-card {
+  background: white;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 20px 0;
+  margin-bottom: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.shop-info-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 20px;
+  background: linear-gradient(135deg, #fff9f5 0%, #ffffff 100%);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.shop-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid #ff6700;
+  padding: 2px;
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.shop-avatar:hover {
+  transform: scale(1.05);
+}
+
+.shop-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #f0f0f0;
+}
+
+.shop-details {
+  flex: 1;
+}
+
+.shop-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  cursor: pointer;
+  transition: color 0.2s;
+  margin-bottom: 8px;
+}
+
+.shop-name:hover {
+  color: #ff6700;
+}
+
+.shop-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.shop-rating,
+.shop-sales {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.shop-actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.btn-contact-shop,
+.btn-view-shop {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  border-radius: 40px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-contact-shop {
+  background: linear-gradient(135deg, #ff6700, #ff8533);
+  color: white;
+  box-shadow: 0 2px 8px rgba(255, 103, 0, 0.2);
+}
+
+.btn-contact-shop:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 103, 0, 0.3);
+}
+
+.btn-view-shop {
+  background: white;
+  color: #ff6700;
+  border: 1px solid #ff6700;
+}
+
+.btn-view-shop:hover {
+  background: #fff5ed;
+  transform: translateY(-2px);
+}
+
+/* ========== 支付弹窗相关样式 ========== */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1455,23 +2284,688 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1100;
+  z-index: 200;
 }
 
 .modal-container {
   background: white;
-  border-radius: 24px;
-  width: 400px;
+  border-radius: 28px;
+  width: 600px;
   max-width: 90%;
   overflow: hidden;
-  box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.2);
-  animation: modalFadeIn 0.2s ease-out;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
 }
 
-@keyframes modalFadeIn {
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.modal-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-icon {
+  width: 22px;
+  height: 22px;
+  stroke: #ff6700;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: #94a3b8;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #ff6700;
+}
+
+.modal-body {
+  padding: 24px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.order-modal-new {
+  width: 520px;
+  max-width: 90%;
+}
+
+.order-product-section {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+
+.order-product-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.order-product-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.order-product-detail {
+  flex: 1;
+}
+
+.order-product-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 6px;
+}
+
+.order-product-specs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.order-product-specs span {
+  font-size: 12px;
+  color: #64748b;
+  background: #eef2ff;
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.order-product-price {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.order-product-price .price-label,
+.order-product-price .quantity-label {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.order-product-price .price-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ff6700;
+}
+
+.order-product-total {
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.order-product-total span {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.order-product-total .total-price {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ff6700;
+}
+
+.order-address-section {
+  margin-bottom: 20px;
+  padding: 0 4px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 12px;
+  padding-left: 8px;
+  border-left: 3px solid #ff6700;
+}
+
+.address-content {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.address-line {
+  display: flex;
+  margin-bottom: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.address-line:last-child {
+  margin-bottom: 0;
+}
+
+.address-label {
+  width: 70px;
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.address-line span:last-child {
+  color: #1e293b;
+  word-break: break-all;
+}
+
+.order-payment-section {
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.payment-option:hover {
+  border-color: #ff6700;
+  background: #fff7ed;
+}
+
+.payment-option.active {
+  border-color: #ff6700;
+  background: #fff7ed;
+  box-shadow: 0 2px 8px rgba(255, 103, 0, 0.1);
+}
+
+.payment-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.payment-option.active .payment-radio {
+  border-color: #ff6700;
+}
+
+.radio-inner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff6700;
+}
+
+.payment-info {
+  flex: 1;
+}
+
+.payment-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.payment-desc {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.payment-icon {
+  font-size: 24px;
+  opacity: 0.7;
+}
+
+.payment-option.active .payment-icon {
+  opacity: 1;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px 24px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.btn-cancel {
+  background: #f1f5f9;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 40px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
+  color: #475569;
+}
+
+.btn-cancel:hover {
+  background: #e2e8f0;
+}
+
+.btn-confirm-modal {
+  background: linear-gradient(135deg, #ff6700, #ff8533);
+  border: none;
+  padding: 10px 28px;
+  border-radius: 40px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s;
+  box-shadow: 0 2px 8px rgba(255, 103, 0, 0.3);
+}
+
+.btn-confirm-modal:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 103, 0, 0.35);
+}
+
+.btn-confirm-modal:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 二维码弹窗样式 */
+.qr-modal-new {
+  width: 820px;
+  max-width: 95%;
+  max-height: 90vh;
+  overflow: visible;
+}
+
+.qr-body-new {
+  padding: 28px 32px;
+  overflow: visible;
+}
+
+.qr-layout {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 32px;
+}
+
+.qr-left {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.qr-code {
+  margin-bottom: 20px;
+}
+
+.qr-code img {
+  width: 220px;
+  height: 220px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.qr-tips {
+  text-align: center;
+}
+
+.qr-expire {
+  font-size: 14px;
+  color: #ff6700;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.expire-time {
+  font-size: 20px;
+  font-weight: bold;
+  color: #ff6700;
+  background: #fff0e6;
+  padding: 2px 8px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+.qr-note {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-top: 8px;
+}
+
+.qr-refresh-link {
+  margin-top: 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.refresh-text {
+  color: #94a3b8;
+}
+
+.refresh-link {
+  color: #ff6700;
+  font-weight: 500;
+  text-decoration: underline;
+  margin-left: 4px;
+}
+
+.refresh-link:hover {
+  color: #ff8533;
+}
+
+.qr-right {
+  flex: 1;
+  min-width: 280px;
+}
+
+.order-info-title,
+.delivery-info-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #ff6700;
+  display: inline-block;
+}
+
+.order-info-list,
+.delivery-info-list {
+  border-radius: 20px;
+  padding: 18px 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.order-info-item,
+.delivery-info-item {
+  display: flex;
+  margin-bottom: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.order-info-item:last-child,
+.delivery-info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  width: 85px;
+  color: #64748b;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.info-value {
+  flex: 1;
+  color: #1e293b;
+  word-break: break-all;
+}
+
+.order-id {
+  font-family: monospace;
+  font-size: 13px;
+  color: #ff6700;
+  letter-spacing: 0.5px;
+}
+
+.total {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.total-price {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ff6700;
+}
+
+.address-text {
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.qr-footer-center {
+  display: flex;
+  justify-content: center;
+  gap: 50px;
+  padding-top: 16px;
+  margin-top: 8px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.qr-footer-center .btn-secondary {
+  background: #f1f5f9;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 48px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: 0.2s;
+  color: #475569;
+  font-weight: 500;
+}
+
+.qr-footer-center .btn-secondary:hover {
+  background: #e2e8f0;
+  transform: translateY(-1px);
+}
+
+.qr-footer-center .btn-primary {
+  background: linear-gradient(135deg, #ff6700, #ff8533);
+  border: none;
+  padding: 12px 36px;
+  border-radius: 48px;
+  color: white;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s;
+  box-shadow: 0 4px 12px rgba(255, 103, 0, 0.3);
+}
+
+.qr-footer-center .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 103, 0, 0.4);
+}
+
+.qr-code-expired {
+  width: 220px;
+  height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border-radius: 16px;
+  margin-bottom: 20px;
+  border: 2px dashed #e2e8f0;
+}
+
+.expired-icon {
+  font-size: 56px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+.expired-text {
+  font-size: 14px;
+  color: #94a3b8;
+  margin-bottom: 16px;
+}
+
+.btn-refresh {
+  background: linear-gradient(135deg, #ff6700, #ff8533);
+  border: none;
+  padding: 8px 20px;
+  border-radius: 40px;
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: 0.2s;
+  box-shadow: 0 2px 8px rgba(255, 103, 0, 0.3);
+}
+
+.btn-refresh:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 103, 0, 0.35);
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 支付成功动画样式 */
+.payment-success-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.success-animation {
+  background: white;
+  border-radius: 32px;
+  padding: 48px 56px;
+  text-align: center;
+  animation: scaleIn 0.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
+}
+
+.success-checkmark {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 24px;
+}
+
+.check-icon {
+  width: 80px;
+  height: 80px;
+  position: relative;
+  border-radius: 50%;
+  box-sizing: content-box;
+  border: 4px solid #4caf50;
+}
+
+.icon-line {
+  height: 5px;
+  background-color: #4caf50;
+  display: block;
+  border-radius: 2px;
+  position: absolute;
+  z-index: 10;
+}
+
+.icon-line.line-tip {
+  top: 46px;
+  left: 14px;
+  width: 25px;
+  transform: rotate(45deg);
+  animation: iconLineTip 0.75s;
+}
+
+.icon-line.line-long {
+  top: 38px;
+  right: 8px;
+  width: 47px;
+  transform: rotate(-45deg);
+  animation: iconLineLong 0.75s;
+}
+
+.icon-circle {
+  top: -4px;
+  left: -4px;
+  z-index: 10;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  position: absolute;
+  box-sizing: content-box;
+  border: 4px solid rgba(76, 175, 80, 0.5);
+}
+
+.icon-fix {
+  top: 8px;
+  left: 26px;
+  width: 5px;
+  height: 80px;
+  position: absolute;
+  transform: rotate(-45deg);
+  background-color: #ffffff;
+}
+
+.success-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 12px;
+}
+
+.success-desc {
+  font-size: 14px;
+  color: #64748b;
+}
+
+@keyframes fadeIn {
   from {
     opacity: 0;
-    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
   }
   to {
     opacity: 1;
@@ -1479,54 +2973,724 @@ onMounted(() => {
   }
 }
 
-.modal-header {
-  padding: 20px 24px 8px 24px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+@keyframes iconLineTip {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+  to {
+    width: 25px;
+    opacity: 1;
+  }
+}
+
+@keyframes iconLineLong {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+  to {
+    width: 47px;
+    opacity: 1;
+  }
+}
+
+/* ========== 退款弹窗样式 ========== */
+/* ========== 优化版退款弹窗样式 ========== */
+.refund-modal-optimized {
+  width: 560px;
+  max-width: 90%;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.2);
 }
 
 .modal-icon {
-  width: 40px;
-  height: 40px;
-  background: #fee2e2;
-  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  stroke: #ff6700;
+  margin-right: 6px;
+}
+
+.modal-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  color: #ef4444;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #ffffff;
 }
 
 .modal-header h3 {
   font-size: 18px;
   font-weight: 600;
   color: #1e293b;
-  margin: 0;
+  display: flex;
+  align-items: center;
 }
 
-.modal-body {
-  padding: 8px 24px 20px 24px;
+.close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
 }
 
-.modal-body p {
+.close-btn:hover {
+  background: #ff6700;
+  color: white;
+}
+
+.refund-modal-body {
+  padding: 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* 商品信息卡片 */
+.refund-product-card {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: #f8f9fc;
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+
+.refund-product-card .product-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #f0f0f0;
+}
+
+.refund-product-card .product-info {
+  flex: 1;
+}
+
+.refund-product-card .product-name {
   font-size: 15px;
-  color: #334155;
-  margin: 4px 0;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 6px;
+  line-height: 1.3;
 }
 
-.modal-tip {
+.refund-product-card .product-spec {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.refund-product-card .product-price {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.refund-product-card .product-price .price {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ff6700;
+}
+
+.refund-product-card .product-price .quantity {
   font-size: 13px;
+  color: #64748b;
+}
+
+/* 表单区块 */
+.form-section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 12px;
+}
+
+.required {
+  color: #ef4444;
+  margin-left: 2px;
+} /* 退款金额显示区域 - 不可编辑 */
+.amount-display-group {
+  display: flex;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0 16px;
+  background: #f8f9fc;
+}
+
+.currency-symbol {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-right: 8px;
+}
+
+.amount-display {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 600;
+  color: #ff6700;
+  padding: 14px 0;
+  background: transparent;
+}
+
+.amount-hint {
+  font-size: 12px;
   color: #94a3b8;
   margin-top: 8px;
 }
 
-.modal-footer {
-  padding: 16px 24px 24px 24px;
+/* 退款原因下拉框 */
+.reason-select-optimized {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 14px;
+  color: #1e293b;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+}
+
+.reason-select-optimized:focus {
+  border-color: #ff6700;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 103, 0, 0.1);
+}
+
+.reason-select-optimized option[disabled] {
+  color: #cbd5e1;
+}
+
+/* 退款说明文本框 */
+.desc-textarea-optimized {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 14px;
+  resize: vertical;
+  font-family: inherit;
+  transition: all 0.2s;
+  background: #ffffff;
+}
+
+.desc-textarea-optimized:focus {
+  border-color: #ff6700;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 103, 0, 0.1);
+}
+
+.desc-textarea-optimized::placeholder {
+  color: #cbd5e1;
+}
+
+/* 上传凭证区域 */
+.upload-area-optimized {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 12px;
 }
 
+.upload-item {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: #f8f9fc;
+}
+
+.upload-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.remove-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.remove-btn:hover {
+  background: #ef4444;
+}
+
+.upload-btn-optimized {
+  width: 80px;
+  height: 80px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #f8f9fc;
+}
+
+.upload-btn-optimized:hover {
+  border-color: #ff6700;
+  background: #fff7ed;
+}
+
+.upload-btn-optimized svg {
+  width: 24px;
+  height: 24px;
+  stroke: #94a3b8;
+}
+
+.upload-btn-optimized:hover svg {
+  stroke: #ff6700;
+}
+
+.upload-btn-optimized span {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.upload-btn-optimized small {
+  font-size: 9px;
+  color: #cbd5e1;
+}
+
+/* 退款提示 */
+.refund-tip-optimized {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  background: #fef3c7;
+  border-radius: 12px;
+  margin-top: 8px;
+}
+
+.refund-tip-optimized svg {
+  width: 18px;
+  height: 18px;
+  stroke: #d97706;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.refund-tip-optimized span {
+  font-size: 12px;
+  color: #92400e;
+  line-height: 1.4;
+}
+
+/* 底部按钮 */
+.modal-footer-optimized {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px 24px;
+  border-top: 1px solid #f0f0f0;
+  background: #ffffff;
+}
+
+.btn-cancel-optimized {
+  background: #f1f5f9;
+  border: none;
+  padding: 10px 28px;
+  border-radius: 40px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #475569;
+}
+
+.btn-cancel-optimized:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.btn-submit-optimized {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border: none;
+  padding: 10px 32px;
+  border-radius: 40px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.btn-submit-optimized:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.btn-submit-optimized:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 响应式 */
+@media (max-width: 640px) {
+  .refund-modal-optimized {
+    width: 95%;
+  }
+
+  .refund-product-card {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .refund-product-card .product-price {
+    justify-content: center;
+  }
+
+  .upload-area-optimized {
+    gap: 10px;
+  }
+
+  .upload-item,
+  .upload-btn-optimized {
+    width: 70px;
+    height: 70px;
+  }
+
+  .modal-footer-optimized {
+    flex-direction: column-reverse;
+  }
+
+  .btn-cancel-optimized,
+  .btn-submit-optimized {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+/* 退款成功确认弹窗 */
+.refund-confirm-modal {
+  width: 420px;
+  max-width: 90%;
+  text-align: center;
+}
+
+.refund-confirm-body {
+  padding: 32px 24px;
+}
+
+.success-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.success-icon svg {
+  width: 36px;
+  height: 36px;
+  stroke: white;
+}
+
+.confirm-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.confirm-desc {
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 24px;
+}
+
+.refund-info-box {
+  background: #f8f9fc;
+  border-radius: 16px;
+  padding: 16px;
+  text-align: left;
+  margin-bottom: 24px;
+}
+
+.refund-info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+.refund-info-item:first-child {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.refund-info-item strong {
+  color: #ff6700;
+}
+
+.btn-view-refund {
+  width: 100%;
+  background: transparent;
+  border: 1px solid #ff6700;
+  color: #ff6700;
+  padding: 12px;
+  border-radius: 40px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-view-refund:hover {
+  background: #fff7ed;
+  transform: translateY(-1px);
+}
+
+/* 响应式 */
+@media (max-width: 900px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-steps {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .step-line {
+    width: 2px;
+    height: 20px;
+    margin: 4px 0;
+  }
+
+  .step {
+    width: 100%;
+  }
+
+  .product-item {
+    flex-wrap: wrap;
+  }
+
+  .product-price,
+  .product-quantity,
+  .product-total {
+    margin-left: 100px;
+  }
+
+  .banner-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .banner-left {
+    flex-direction: column;
+  }
+
+  .banner-right {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-search {
+    display: none;
+  }
+
+  .nav-links {
+    gap: 16px;
+  }
+
+  .nav-item {
+    font-size: 13px;
+  }
+
+  .toast {
+    white-space: normal;
+    text-align: center;
+    max-width: 90%;
+  }
+
+  .shop-info-wrapper {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .shop-avatar {
+    width: 56px;
+    height: 56px;
+  }
+
+  .shop-name {
+    font-size: 16px;
+  }
+
+  .shop-meta {
+    justify-content: center;
+  }
+
+  .shop-actions {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .btn-contact-shop,
+  .btn-view-shop {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .qr-layout {
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .qr-code img {
+    width: 180px;
+    height: 180px;
+  }
+
+  .qr-code-expired {
+    width: 180px;
+    height: 180px;
+  }
+}
+
+@media (max-width: 640px) {
+  .refund-modal-new {
+    width: 95%;
+  }
+
+  .upload-area {
+    gap: 8px;
+  }
+
+  .evidence-img,
+  .upload-btn {
+    width: 70px;
+    height: 70px;
+  }
+
+  .refund-product-section {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .refund-product-section .product-price {
+    justify-content: center;
+  }
+
+  .btn-confirm,
+  .btn-refund-apply,
+  .btn-cancel,
+  .btn-pay,
+  .btn-view-refund-detail {
+    padding: 8px 20px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .shop-info-wrapper {
+    padding: 16px;
+  }
+
+  .btn-contact-shop,
+  .btn-view-shop {
+    padding: 6px 16px;
+    font-size: 13px;
+  }
+}
+/* 取消订单按钮（用于详情页） */
+.btn-cancel-order {
+  background: transparent;
+  border: 1px solid #ef4444;
+  padding: 10px 24px;
+  border-radius: 40px;
+  color: #ef4444;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-cancel-order:hover {
+  background: #ef4444;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* 取消订单弹窗样式 */
+.cancel-modal {
+  width: 420px;
+  max-width: 90%;
+}
+
+.cancel-modal .modal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cancel-modal .close-btn {
+  margin-left: auto;
+}
+
+.warning-icon {
+  background: #fee2e2;
+  color: #ef4444;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .modal-btn {
   padding: 8px 20px;
   border-radius: 40px;
@@ -1537,95 +3701,26 @@ onMounted(() => {
   border: none;
 }
 
-.modal-btn-cancel {
-  background: #f1f5f9;
-  color: #475569;
-}
-
 .modal-btn-cancel:hover {
-  background: #e2e8f0;
-}
-
-.modal-btn-confirm {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: white;
-}
-
-.modal-btn-confirm:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
-/* 响应式 */
-@media (max-width: 1000px) {
-  .product-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .product-info {
-    width: 100%;
-  }
-
-  .action-col {
-    width: 100%;
-    flex-direction: row;
-    justify-content: flex-start;
-  }
-
-  .order-footer {
-    flex-direction: column;
-  }
-
-  .footer-right {
-    width: 100%;
-    justify-content: flex-start;
-  }
+.modal-btn-confirm-cancel,
+.modal-btn-confirm-refund {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 40px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-@media (max-width: 768px) {
-  .nav-links .nav-item span {
-    display: none;
-  }
-
-  .order-tabs {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .tabs-left {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .page-header {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .toast {
-    white-space: normal;
-    text-align: center;
-    max-width: 90%;
-  }
-
-  .filter-bar {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .filter-group {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .filter-right {
-    justify-content: center;
-  }
-
-  .header-left {
-    flex-direction: column;
-    gap: 4px;
-  }
+.modal-btn-confirm-cancel:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 </style>

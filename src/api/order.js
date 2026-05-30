@@ -10,7 +10,7 @@ export function getSuborderList() {
 
 //获取订单详情
 // 获取订单详情 - 确保参数正确传递
-export function getOrderDetail(suborderId) {
+export function getSuborderDetail(suborderId) {
   return request({
     url: '/order/suborder/detail',
     method: 'get',

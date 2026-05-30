@@ -1,7 +1,6 @@
-消息无法实时接收,得等一会儿才接收到消息!并且发不了消息(提示:当前网络未连接,消息发送失败)
 <template>
   <div>
-    <!-- 店铺选择窗口（点击悬浮按钮或店铺切换按钮时弹出） -->
+    <!-- 店铺选择窗口 -->
     <transition name="modal-fade">
       <div v-if="shopSelectorVisible" class="shop-selector-overlay" @click.self="closeShopSelector">
         <div class="shop-selector-modal">
@@ -35,7 +34,6 @@
               </svg>
             </button>
           </div>
-
           <div class="modal-body">
             <div class="shop-grid">
               <div
@@ -44,15 +42,17 @@
                 class="shop-card"
                 @click="selectShopAndOpenChat(shop)"
               >
-                <div class="shop-card-avatar" :style="{ background: shop.avatarColor }">
-                  <img
-                    v-if="isImageUrl(shop.shopLogo)"
-                    :src="shop.shopLogo"
-                    :alt="shop.shopName"
-                    class="avatar-image"
-                    @error="handleShopImageError(shop)"
-                  />
-                  <span v-else class="shop-default-icon">{{ shop.shopLogo || '🏪' }}</span>
+                <div class="shop-card-avatar-wrapper">
+                  <div class="shop-card-avatar" :style="{ background: shop.avatarColor }">
+                    <img
+                      v-if="isImageUrl(shop.shopLogo)"
+                      :src="shop.shopLogo"
+                      :alt="shop.shopName"
+                      class="avatar-image"
+                      @error="handleShopImageError(shop)"
+                    />
+                    <span v-else class="shop-default-icon">{{ shop.shopLogo || '🏪' }}</span>
+                  </div>
                   <span v-if="shop.totalUnreadCount > 0" class="unread-badge-large">{{
                     shop.totalUnreadCount > 99 ? '99+' : shop.totalUnreadCount
                   }}</span>
@@ -70,7 +70,6 @@
                 </div>
               </div>
             </div>
-
             <div v-if="shops.length === 0" class="empty-shops">
               <div class="empty-icon">🏪</div>
               <p>暂无店铺，请联系管理员</p>
@@ -83,39 +82,24 @@
     <!-- 主聊天面板 -->
     <transition name="slide-fade">
       <div v-if="visible && currentShop" class="chat-panel">
-        <!-- 左上角店铺切换按钮 - 显示真实店铺logo和名称 -->
-        <div class="panel-header-bar">
-          <button class="switch-shop-btn" @click="openShopSelector">
-            <div class="shop-btn-avatar" :style="{ background: currentShop.avatarColor }">
-              <img
-                v-if="isImageUrl(currentShop.shopLogo)"
-                :src="currentShop.shopLogo"
-                :alt="currentShop.shopName"
-                class="shop-btn-image"
-                @error="handleShopImageError(currentShop)"
-              />
-              <span v-else>{{ currentShop.shopLogo || '🏪' }}</span>
-            </div>
-            <span class="shop-btn-name">{{ currentShop.shopName }}</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M6 9L12 15L18 9"
-                stroke="currentColor"
-                stroke-width="1.5"
-                stroke-linecap="round"
-              />
-            </svg>
-          </button>
-        </div>
-
-        <!-- 左侧联系人列表 -->
+        <!--左侧 联系人侧边栏 -->
         <div class="contact-sidebar" :class="{ collapsed: sidebarCollapsed }">
           <div class="sidebar-header">
-            <div class="sidebar-title">聊天</div>
-            <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <button class="switch-shop-btn" @click="openShopSelector">
+              <div class="shop-btn-avatar" :style="{ background: currentShop.avatarColor }">
+                <img
+                  v-if="isImageUrl(currentShop.shopLogo)"
+                  :src="currentShop.shopLogo"
+                  :alt="currentShop.shopName"
+                  class="shop-btn-image"
+                  @error="handleShopImageError(currentShop)"
+                />
+                <span v-else>{{ currentShop.shopLogo || '🏪' }}</span>
+              </div>
+              <span class="shop-btn-name">{{ currentShop.shopName }}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path
-                  d="M4 6H20M4 12H20M4 18H20"
+                  d="M6 9l6 6 6-6"
                   stroke="currentColor"
                   stroke-width="1.5"
                   stroke-linecap="round"
@@ -124,256 +108,198 @@
             </button>
           </div>
           <div class="contact-list">
-            <transition-group name="contact-fade" tag="div">
+            <transition-group name="contact-fade">
               <div
                 v-for="contact in currentContacts"
                 :key="contact.id"
                 :class="[
                   'contact-item',
-                  { active: currentContact?.id === contact.id, unread: contact.unreadCount > 0 },
+                  { active: currentContactId === contact.id, unread: contact.unreadCount > 0 },
                 ]"
                 @click="switchContact(contact)"
               >
-                <div class="contact-avatar" :style="{ background: contact.avatarColor }">
-                  <img
-                    v-if="isImageUrl(contact.avatar)"
-                    :src="contact.avatar"
-                    :alt="contact.name"
-                    class="avatar-image"
-                    @error="handleImageError(contact)"
-                  />
-                  <span v-else>{{ contact.avatar || getDefaultAvatar(contact.partnerType) }}</span>
+                <div class="contact-avatar-wrapper">
+                  <div class="contact-avatar" :style="{ background: contact.avatarColor }">
+                    <img
+                      v-if="isImageUrl(contact.avatar)"
+                      :src="contact.avatar"
+                      :alt="contact.name"
+                      class="avatar-image"
+                      @error="handleImageError(contact)"
+                    />
+                    <span v-else>{{ contact.avatar || '👤' }}</span>
+                  </div>
                   <span v-if="contact.unreadCount > 0" class="unread-badge-small">{{
                     contact.unreadCount > 99 ? '99+' : contact.unreadCount
                   }}</span>
                 </div>
-                <div class="contact-info" v-if="!sidebarCollapsed">
+                <div class="contact-info">
                   <div class="contact-name">{{ contact.name }}</div>
                   <div class="contact-preview">{{ contact.lastMessage || '暂无消息' }}</div>
-                  <div class="contact-time" v-if="contact.lastMessageTime">
-                    {{ formatShortTime(contact.lastMessageTime) }}
-                  </div>
+                  <div class="contact-time">{{ formatShortTime(contact.lastMessageTime) }}</div>
                 </div>
               </div>
             </transition-group>
+            <div v-if="currentContacts.length === 0" class="empty-contacts">暂无会话</div>
+          </div>
+          <div class="sidebar-footer">
+            <button class="collapse-btn" @click="sidebarCollapsed = !sidebarCollapsed">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path
+                  v-if="!sidebarCollapsed"
+                  d="M15 18l-6-6 6-6"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  v-else
+                  d="M9 6l6 6-6 6"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
           </div>
         </div>
 
-        <!-- 右侧聊天区域 -->
+        <!-- 消息区域 -->
         <div class="chat-area">
-          <transition name="shop-switch" mode="out-in">
-            <div :key="currentShop?.shopId" class="chat-content-wrapper">
-              <!-- 聊天头部 -->
-              <div class="chat-header" v-if="currentContact">
-                <div class="header-info">
-                  <div class="chat-name">{{ currentContact.name }}</div>
-                  <div class="chat-status">
-                    <span
-                      :class="[
-                        'status-dot',
-                        {
-                          online: getShopConnectionStatus(currentShop?.shopId),
-                          offline: !getShopConnectionStatus(currentShop?.shopId),
-                        },
-                      ]"
-                    ></span>
-                    <span>{{
-                      getShopConnectionStatus(currentShop?.shopId) ? '在线' : '离线'
-                    }}</span>
-                  </div>
-                </div>
-                <div class="header-actions">
-                  <button class="icon-btn minimize-btn" @click="minimizePanel">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M20 12H4"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                  </button>
-                  <button class="icon-btn delete-btn" @click="showDeleteConfirm">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M20 5H4M7 5V4C7 3.46957 7.21071 2.96086 7.58579 2.58579C7.96086 2.21071 8.46957 2 9 2H15C15.5304 2 16.0391 2.21071 16.4142 2.58579C16.7893 2.96086 17 3.46957 17 4V5M18 5V19C18 19.5304 17.7893 20.0391 17.4142 20.4142C17.0391 20.7893 16.5304 21 16 21H8C7.46957 21 6.96086 20.7893 6.58579 20.4142C6.21071 20.0391 6 19.5304 6 19V5H18Z"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                      />
-                      <path
-                        d="M10 10V16M14 10V16"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                  </button>
-                </div>
+          <div class="chat-header" v-if="currentContact">
+            <div class="header-info">
+              <div class="chat-name">{{ currentContact.name }}</div>
+              <div class="chat-status">
+                <span :class="['status-dot', currentContact.online ? 'online' : 'offline']"></span>
+                <span>{{ currentContact.online ? '在线' : '离线' }}</span>
               </div>
-
-              <!-- 消息列表区域 -->
-              <div class="chat-messages" ref="messagesContainer">
-                <div v-if="!currentContact" class="empty-chat">
-                  <div class="empty-icon">💬</div>
-                  <p>选择一个联系人开始聊天</p>
-                </div>
-
-                <template v-else>
-                  <div class="system-message" v-if="!getShopConnectionStatus(currentShop?.shopId)">
-                    <span class="system-text">当前店铺网络不可用，消息将无法实时接收</span>
-                  </div>
-
-                  <div class="load-more-trigger" ref="loadMoreTrigger"></div>
-
-                  <div v-if="isLoadingMore" class="loading-more-wrapper">
-                    <div class="loading-more">
-                      <div class="loading-bubble">
-                        <span class="loading-dot"></span>
-                        <span class="loading-dot"></span>
-                        <span class="loading-dot"></span>
-                        <span class="loading-text"> 正在加载消息... </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    v-else-if="!hasMoreMessages && currentMessages.length > 0"
-                    class="no-more-messages"
-                  >
-                    <span>———— 已经没有更多消息了 ————</span>
-                  </div>
-
-                  <div
-                    v-for="(msg, idx) in currentMessages"
-                    :key="msg.id"
-                    class="message-wrapper"
-                    :data-msg-id="msg.id"
-                  >
-                    <div
-                      class="message-time-divider"
-                      v-if="shouldShowTimeDivider(msg, idx, currentMessages)"
-                    >
-                      {{ formatDate(msg.time) }}
-                    </div>
-
-                    <div v-if="msg.isSystem" class="system-tip">
-                      {{ msg.content }}
-                    </div>
-
-                    <div
-                      v-else
-                      :class="['message-item', msg.isSelf ? 'message-self' : 'message-other']"
-                    >
-                      <div class="message-avatar" v-if="!msg.isSelf">
-                        <div class="avatar" :style="{ background: currentContact?.avatarColor }">
-                          <img
-                            v-if="currentContact && isImageUrl(currentContact.avatar)"
-                            :src="currentContact.avatar"
-                            :alt="currentContact.name"
-                            class="avatar-image"
-                            @error="handleImageError(currentContact)"
-                          />
-                          <span v-else>{{
-                            currentContact?.avatar || getDefaultAvatar(currentContact?.partnerType)
-                          }}</span>
-                        </div>
-                      </div>
-                      <div class="message-bubble-wrapper">
-                        <div class="message-bubble">
-                          <div class="message-text">{{ msg.content }}</div>
-                        </div>
-                        <div class="message-meta">
-                          <span class="message-time-small">{{ formatTime(msg.time) }}</span>
-                          <span v-if="msg.isSelf" class="message-status">已读</span>
-                        </div>
-                      </div>
-                      <div class="message-avatar" v-if="msg.isSelf">
-                        <div class="avatar self-avatar">店</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div ref="scrollAnchor"></div>
-                </template>
-              </div>
-
-              <!-- 底部输入区域 -->
-              <div class="chat-footer" v-if="currentContact">
-                <div class="input-wrapper">
-                  <input
-                    type="text"
-                    v-model="inputMessage"
-                    @keyup.enter="sendMessage"
-                    :placeholder="`发送消息给 ${currentContact.name}...`"
-                    class="chat-input"
-                    :disabled="!getShopConnectionStatus(currentShop?.shopId)"
+            </div>
+            <div class="header-actions">
+              <button class="icon-btn minimize-btn" @click="minimizePanel" title="最小化">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M5 12h14" stroke="currentColor" stroke-width="1.5" />
+                </svg>
+              </button>
+              <button class="icon-btn delete-btn" @click="showDeleteConfirm" title="清空聊天记录">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"
+                    stroke="currentColor"
+                    stroke-width="1.5"
                   />
-                  <button
-                    class="send-btn"
-                    @click="sendMessage"
-                    :disabled="
-                      !getShopConnectionStatus(currentShop?.shopId) || !inputMessage.trim()
-                    "
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      />
-                    </svg>
-                    发送
-                  </button>
-                </div>
-                <div class="footer-tools">
-                  <button
-                    class="tool-btn"
-                    @click="testConnection"
-                    :class="{ active: !allShopsConnected }"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M23 4V10H17M1 20V14H7M3.51 9C5.73 5.46 9.66 3 14.17 3C20.25 3 25.08 7.83 25.08 13.92C25.08 20 20.25 24.83 14.17 24.83C8.09 24.83 3.26 20 3.26 13.92"
-                        stroke="currentColor"
-                        stroke-width="1.5"
-                        stroke-linecap="round"
-                      />
-                    </svg>
-                    {{ allShopsConnected ? '已连接' : '重连' }}
-                  </button>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div ref="messagesContainer" class="chat-messages" v-if="currentContact">
+            <!-- 顶部加载更多触发器 -->
+            <div class="load-more-trigger" ref="loadMoreTrigger"></div>
+
+            <!-- 加载更多指示器 -->
+            <!-- 加载更多指示器 - 固定在顶部 -->
+            <div v-if="isLoadingMore" class="loading-more-wrapper">
+              <div class="loading-more">
+                <div class="loading-card">
+                  <div class="loading-spinner"></div>
+                  <span class="loading-label">加载中...</span>
                 </div>
               </div>
             </div>
-          </transition>
+
+            <!-- 没有更多消息提示 -->
+            <div
+              v-else-if="!hasMoreMessages && currentMessages.length > 0"
+              class="no-more-messages"
+            >
+              已经没有更多消息了
+            </div>
+
+            <!-- 消息列表 -->
+            <div v-for="(msg, idx) in currentMessages" :key="msg.id || idx" class="message-wrapper">
+              <div
+                v-if="shouldShowTimeDivider(msg, idx, currentMessages)"
+                class="message-time-divider"
+              >
+                <span>{{ formatDateTime(msg.time) }}</span>
+              </div>
+              <div
+                :class="['message-item', msg.isSelf ? 'message-self' : 'message-other']"
+                :data-msg-id="msg.id"
+              >
+                <div class="message-avatar">
+                  <div v-if="msg.isSelf" class="avatar self-avatar">
+                    <img
+                      v-if="currentShop.shopLogo && isImageUrl(currentShop.shopLogo)"
+                      :src="currentShop.shopLogo"
+                      class="avatar-image"
+                      @error="handleShopImageError(currentShop)"
+                    />
+                    <span v-else>{{ currentShop.shopLogo || '🏪' }}</span>
+                  </div>
+                  <div v-else class="avatar" :style="{ background: currentContact.avatarColor }">
+                    <img
+                      v-if="isImageUrl(currentContact.avatar)"
+                      :src="currentContact.avatar"
+                      class="avatar-image"
+                      @error="handleImageError(currentContact)"
+                    />
+                    <span v-else>{{ currentContact.avatar || '👤' }}</span>
+                  </div>
+                </div>
+                <div class="message-bubble-wrapper">
+                  <div class="message-bubble">
+                    <div class="message-text">{{ msg.content }}</div>
+                  </div>
+                  <div class="message-meta">
+                    <span>{{ formatShortTime(msg.time) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div ref="scrollAnchor" class="scroll-anchor"></div>
+          </div>
+
+          <div v-if="!currentContact" class="empty-chat">
+            <div class="empty-icon">💬</div>
+            <p>选择联系人开始聊天</p>
+          </div>
+
+          <!-- 输入区域 -->
+          <div class="chat-footer" v-if="currentContact">
+            <div class="input-wrapper">
+              <input
+                v-model="inputMessage"
+                @keyup.enter="sendMessage"
+                :placeholder="currentContact ? '输入消息...' : '连接中...'"
+                class="chat-input"
+              />
+              <button class="send-btn" @click="sendMessage" :disabled="!inputMessage.trim()">
+                发送
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </transition>
 
-    <!-- 删除确认对话框 -->
-    <div
-      v-if="deleteConfirmVisible"
-      class="confirm-overlay"
-      @click.self="deleteConfirmVisible = false"
-    >
-      <div class="confirm-dialog">
-        <div class="confirm-icon">🗑️</div>
-        <div class="confirm-title">确定要删除聊天记录吗？</div>
-        <div class="confirm-message">删除后将无法恢复，确定清空所有聊天记录吗？</div>
-        <div class="confirm-actions">
-          <button class="confirm-btn cancel" @click="deleteConfirmVisible = false">取消</button>
-          <button class="confirm-btn confirm" @click="confirmDeleteMessages">确定删除</button>
-        </div>
-      </div>
-    </div>
-
     <!-- 悬浮按钮 -->
     <button
       class="chat-fab"
-      @click="handleFabClick"
       :class="{ active: visible, hasNew: totalUnreadCount > 0 }"
+      @click="handleFabClick"
     >
       <div class="fab-icon">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
@@ -386,15 +312,32 @@
           <circle cx="16" cy="10" r="1.5" fill="white" />
         </svg>
       </div>
-      <span class="unread-badge" v-if="totalUnreadCount > 0">{{
+      <span v-if="totalUnreadCount > 0" class="unread-badge">{{
         totalUnreadCount > 99 ? '99+' : totalUnreadCount
       }}</span>
     </button>
+
+    <!-- 删除确认弹窗 -->
+    <div
+      v-if="deleteConfirmVisible"
+      class="confirm-overlay"
+      @click.self="deleteConfirmVisible = false"
+    >
+      <div class="confirm-dialog">
+        <div class="confirm-icon">⚠️</div>
+        <div class="confirm-title">确认清空聊天记录？</div>
+        <div class="confirm-message">此操作不可恢复，确定要清空吗？</div>
+        <div class="confirm-actions">
+          <button class="confirm-btn cancel" @click="deleteConfirmVisible = false">取消</button>
+          <button class="confirm-btn confirm" @click="confirmDeleteMessages">确认</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import webSocketService, { sendSocketMessage } from '@/utils/websocket'
 import { getSpectifyMessageList, getAllSessionList, markAllAsRead } from '@/api/message'
 import { getShopListByMerchantId } from '@/api/shop'
@@ -408,157 +351,54 @@ const inputMessage = ref('')
 const messagesContainer = ref(null)
 const scrollAnchor = ref(null)
 const loadMoreTrigger = ref(null)
-const sidebarCollapsed = ref(false)
 const currentContactId = ref('')
 const deleteConfirmVisible = ref(false)
 const isLoadingMore = ref(false)
 const hasMoreMessages = ref(true)
-const hasSelectedShop = ref(false)
-
-// 商家信息
-const merchantInfo = localStorage.getItem('mall-user_merchant-info')
-const info = JSON.parse(merchantInfo)
-const merchantId = ref(info.merchantId)
-const merchantType = ref(info.identityType === '商家' ? 'MERCHANT' : 'USER')
-const token = ref(info.token)
-
-//选中的店铺信息
-const selectedShopInfo = localStorage.getItem('selected_shop_info')
-const shopInfo = JSON.parse(selectedShopInfo)
-const currentMerchantUsedShopId = ref(shopInfo.shopId)
-const currentShopId = ref(shopInfo.shopId)
-// WebSocket全局连接状态
-const wsGlobalConnected = ref(false)
+const sidebarCollapsed = ref(false)
+const wsConnected = ref(false)
 
 // 定时器和观察者
-let statusInterval = null
 let messageRefreshInterval = null
 let intersectionObserver = null
 let loadMoreLock = false
 let shouldAutoScroll = true
 
-// 本地存储key
-const STORAGE_KEY = 'selected_shop_info'
+// 商家信息
+const merchantInfo = localStorage.getItem('mall-user_merchant-info')
+const info = merchantInfo ? JSON.parse(merchantInfo) : {}
+const extractPrimitive = (val) => {
+  if (val == null) return ''
+  if (typeof val !== 'object') return val
+  return val.id ?? val.merchantId ?? val.userId ?? val.value ?? ''
+}
+const merchantId = ref(extractPrimitive(info.merchantId))
+const token = ref(extractPrimitive(info.token))
+
+// 选中的店铺
+const selectedShopInfo = localStorage.getItem('selected_shop_info')
+const shopInfo = selectedShopInfo ? JSON.parse(selectedShopInfo) : {}
+const currentShopId = ref(shopInfo?.shopId ? extractPrimitive(shopInfo.shopId) : '')
+
+// 定时器
 
 // ==================== 计算属性 ====================
-
-const currentContacts = computed(() => {
-  if (!currentShop.value) return []
-  return currentShop.value.contacts || []
-})
-
-const currentContact = computed(() => {
-  return currentContacts.value.find((c) => c.id === currentContactId.value)
-})
-
-const currentMessages = computed(() => {
-  return currentContact.value?.messages || []
-})
-
-const totalUnreadCount = computed(() => {
-  return shops.value.reduce((sum, shop) => sum + (shop.totalUnreadCount || 0), 0)
-})
-
-const allShopsConnected = computed(() => {
-  if (shops.value.length === 0) return false
-  // 修复：使用 connected 而不是 wsConnected
-  return shops.value.every((shop) => shop.connected === true)
-})
+const currentContacts = computed(() => currentShop.value?.contacts || [])
+const currentContact = computed(() =>
+  currentContacts.value.find((c) => c.id === currentContactId.value),
+)
+const currentMessages = computed(() => currentContact.value?.messages || [])
+const totalUnreadCount = computed(() =>
+  shops.value.reduce((sum, shop) => sum + (shop.totalUnreadCount || 0), 0),
+)
 
 // ==================== 工具函数 ====================
-
-const log = (type, message, data = null) => {
-  const prefix = '[商家聊天组件]'
-  switch (type) {
-    case 'info':
-      console.log(prefix, message, data || '')
-      break
-    case 'error':
-      console.error(prefix, message, data || '')
-      break
-    case 'warn':
-      console.warn(prefix, message, data || '')
-      break
-    default:
-      console.log(prefix, message, data || '')
-  }
-}
-
-const saveLastSelectedShop = (shop) => {
-  if (shop) {
-    const shopInfo = {
-      shopId: shop.shopId,
-      shopName: shop.shopName,
-      logo: shop.logo,
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(shopInfo))
-  }
-}
-
-const getLastSelectedShop = () => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY)
-    if (saved) {
-      return JSON.parse(saved)
-    }
-  } catch (error) {
-    log('error', '读取本地存储失败', error)
-  }
-  return null
-}
-
-const handleFabClick = () => {
-  if (!visible.value) {
-    if (!hasSelectedShop.value || !currentShop.value) {
-      openShopSelector()
-    } else {
-      visible.value = true
-      // 打开时刷新一次消息
-      if (currentShop.value && currentContact.value) {
-        loadSessionMessagesForShop(currentShop.value, currentContact.value.sessionId)
-      }
-    }
-  } else {
-    visible.value = false
-  }
-}
-
 const isImageUrl = (url) => {
   if (!url || typeof url !== 'string') return false
   return (
     (url.startsWith('http://') || url.startsWith('https://')) &&
     /\.(jpg|jpeg|png|gif|webp|svg|bmp)(\?.*)?$/i.test(url)
   )
-}
-
-const handleImageError = (contact) => {
-  contact.avatar = getDefaultAvatar(contact.partnerType)
-}
-
-const handleShopImageError = (shop) => {
-  shop.logo = '🏪'
-}
-
-const formatTime = (timeStr) => {
-  if (!timeStr) return ''
-  const date = new Date(timeStr)
-  return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
-}
-
-const formatDate = (timeStr) => {
-  if (!timeStr) return ''
-  const date = new Date(timeStr)
-  const today = new Date()
-  const yesterday = new Date(today)
-  yesterday.setDate(yesterday.getDate() - 1)
-
-  if (date.toDateString() === today.toDateString()) {
-    return '今天'
-  } else if (date.toDateString() === yesterday.toDateString()) {
-    return '昨天'
-  } else {
-    return `${date.getMonth() + 1}/${date.getDate()}`
-  }
 }
 
 const formatShortTime = (timeStr) => {
@@ -568,53 +408,437 @@ const formatShortTime = (timeStr) => {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const yesterday = new Date(today)
   yesterday.setDate(yesterday.getDate() - 1)
-
-  if (date >= today) {
+  if (date >= today)
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
-  } else if (date >= yesterday) {
-    return '昨天'
-  } else {
-    return `${date.getMonth() + 1}/${date.getDate()}`
-  }
+  if (date >= yesterday) return '昨天'
+  return `${date.getMonth() + 1}/${date.getDate()}`
+}
+
+const formatDateTime = (timeStr) => {
+  if (!timeStr) return ''
+  const date = new Date(timeStr)
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+  if (date.toDateString() === today.toDateString()) return '今天'
+  if (date.toDateString() === yesterday.toDateString()) return '昨天'
+  return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
 }
 
 const shouldShowTimeDivider = (msg, idx, messages) => {
   if (idx === 0) return true
   const prevMsg = messages[idx - 1]
   if (!prevMsg) return true
-
-  const currentDate = new Date(msg.time).toDateString()
-  const prevDate = new Date(prevMsg.time).toDateString()
-  return currentDate !== prevDate
-}
-
-const getDefaultAvatar = (partnerType) => {
-  const avatarMap = {
-    USER: '👤',
-    MERCHANT: '🏪',
-    REFUND: '💸',
-    LOGISTIC: '📦',
-    PAYMENT: '💰',
-  }
-  return avatarMap[partnerType] || '💬'
+  return new Date(msg.time).toDateString() !== new Date(prevMsg.time).toDateString()
 }
 
 const getShopColor = (index) => {
   const colors = [
-    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-    'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+    '#FF6B6B',
+    '#4ECDC4',
+    '#45B7D1',
+    '#96CEB4',
+    '#FFEAA7',
+    '#DDA0DD',
+    '#98D8C8',
+    '#F7DC6F',
   ]
   return colors[index % colors.length]
 }
 
-const getShopConnectionStatus = (shopId) => {
-  if (!shopId) return false
-  const shop = shops.value.find((s) => s.shopId === shopId)
-  // 修复：使用全局连接状态或店铺连接状态
-  return shop?.connected || wsGlobalConnected.value || false
+const getContactColor = (name) => {
+  const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD']
+  let hash = 0
+  for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  return colors[Math.abs(hash) % colors.length]
+}
+
+// ==================== 业务逻辑 ====================
+const handleFabClick = () => {
+  if (!visible.value) {
+    if (!currentShop.value) {
+      openShopSelector()
+    } else {
+      visible.value = true
+      // 移除这里的 loadSessionMessages 调用
+      // 如果当前联系人有消息，说明已经加载过了，不需要重新加载
+      if (currentContact.value && currentContact.value.messages.length === 0) {
+        loadSessionMessages(currentContact.value.sessionId)
+      }
+    }
+  } else {
+    visible.value = false
+  }
+}
+const openShopSelector = () => {
+  shopSelectorVisible.value = true
+}
+const closeShopSelector = () => {
+  shopSelectorVisible.value = false
+}
+const minimizePanel = () => {
+  visible.value = false
+}
+
+const handleShopImageError = (shop) => {
+  shop.shopLogo = '🏪'
+}
+const handleImageError = (contact) => {
+  contact.avatar = '👤'
+}
+
+// 选择店铺
+const selectShopAndOpenChat = async (shop) => {
+  currentShop.value = shop
+  currentShopId.value = shop.shopId
+  localStorage.setItem(
+    'selected_shop_info',
+    JSON.stringify({ shopId: shop.shopId, shopName: shop.shopName }),
+  )
+
+  shopSelectorVisible.value = false
+  visible.value = true
+
+  await fetchSessionList(shop)
+  if (shop.contacts?.length > 0) {
+    await switchContact(shop.contacts[0])
+  }
+}
+
+// 切换联系人
+const switchContact = async (contact) => {
+  console.log('🔄 switchContact 被调用', contact.id)
+
+  if (currentContactId.value === contact.id) return
+
+  isLoadingMore.value = false
+  hasMoreMessages.value = true
+  shouldAutoScroll = true
+
+  currentContactId.value = contact.id
+
+  if (contact.sessionId && contact.unreadCount > 0) {
+    await markAsRead(contact.sessionId)
+  }
+
+  if (contact.messages.length === 0 && contact.sessionId) {
+    console.log('📥 首次加载消息')
+    await loadSessionMessages(contact.sessionId)
+  }
+
+  await scrollToBottom()
+
+  await nextTick()
+  console.log('🔧 准备设置 IntersectionObserver')
+  setTimeout(() => {
+    setupIntersectionObserver()
+  }, 300)
+}
+// 加载店铺列表
+const fetchShops = async () => {
+  if (!merchantId.value) return
+  try {
+    const res = await getShopListByMerchantId(merchantId.value)
+    if (res?.data) {
+      // 使用 reactive 使整个数据响应式
+      shops.value = reactive(
+        res.data.map((shop, idx) => ({
+          ...shop,
+          shopId: extractPrimitive(shop.shopId),
+          shopName: shop.shopName || '未命名店铺',
+          shopLogo: shop.shopLogo || '🏪',
+          avatarColor: getShopColor(idx),
+          connected: false,
+          contacts: [],
+          totalUnreadCount: 0,
+        })),
+      )
+
+      // 恢复上次选择的店铺
+      const lastShop = shops.value.find((s) => s.shopId === currentShopId.value)
+      if (lastShop) {
+        currentShop.value = lastShop
+        await fetchSessionList(lastShop)
+      }
+    }
+  } catch (e) {
+    console.error('获取店铺列表失败:', e)
+  }
+}
+
+//============================================= 加载会话列表=============================================
+const fetchSessionList = async (shop) => {
+  if (!shop?.shopId) return
+  try {
+    const res = await getAllSessionList(shop.shopId)
+    if (res?.data) {
+      // 保留之前已加载的消息
+      const existingMessagesMap = {}
+      if (shop.contacts) {
+        shop.contacts.forEach((c) => {
+          existingMessagesMap[c.sessionId] = c.messages || []
+        })
+      }
+
+      shop.contacts = reactive(
+        res.data.map((contact, idx) => ({
+          ...contact,
+          id: contact.id || contact.sessionId,
+          sessionId: contact.sessionId,
+          name: contact.name || contact.partnerName || '用户',
+          avatar: contact.avatar || '👤',
+          avatarColor: getContactColor(contact.name || contact.partnerName),
+          lastMessage: contact.lastMessage || '',
+          lastMessageTime: contact.lastMessageTime || contact.updateTime || '',
+          unreadCount: contact.unreadCount || 0,
+          online: contact.online || false,
+          messages: existingMessagesMap[contact.sessionId] || [],
+        })),
+      )
+      shop.totalUnreadCount = shop.contacts.reduce((sum, c) => sum + (c.unreadCount || 0), 0)
+    }
+  } catch (e) {
+    console.error('获取会话列表失败:', e)
+  }
+}
+
+// ====================加载消息====================
+const loadSessionMessages = async (sessionId, beforeId = null, isLoadMore = false) => {
+  if (!currentShop.value?.shopId || !sessionId) return
+  try {
+    const params = {
+      sessionId: sessionId,
+      limit: 20,
+      beforeId: beforeId,
+    }
+
+    const res = await getSpectifyMessageList(params)
+    if (res?.data) {
+      // 找到对应的联系人 - 直接从 shop.contacts 中找，而不是用计算属性
+      const shop = currentShop.value
+      const contact = shop.contacts?.find((c) => c.sessionId === sessionId)
+
+      if (contact) {
+        const newMessages = res.data.map((msg) => ({
+          id: msg.messageRecordId || msg.id,
+          content: msg.content || msg.message,
+          time: msg.createTime || msg.time,
+          isSelf: String(msg.messagePublisherId) === String(currentShop.value.shopId),
+        }))
+
+        if (isLoadMore) {
+          // 去重后追加到前面
+          const existingIds = new Set(contact.messages.map((m) => m.id))
+          const toPrepend = newMessages.filter((m) => !existingIds.has(m.id))
+
+          if (toPrepend.length > 0) {
+            contact.messages = [...toPrepend, ...contact.messages]
+          }
+        } else {
+          // 首次加载，直接替换
+          contact.messages = newMessages
+        }
+
+        // 按时间排序
+        contact.messages.sort((a, b) => new Date(a.time) - new Date(b.time))
+        hasMoreMessages.value = res.data.length >= 20
+      }
+    }
+  } catch (e) {
+    console.error('获取消息失败:', e)
+  }
+}
+
+// ==================== 加载更多消息 ====================
+
+const loadMoreMessages = async () => {
+  console.log('📥 loadMoreMessages 被调用')
+  console.log('  - currentContact:', currentContact.value)
+  console.log('  - sessionId:', currentContact.value?.sessionId)
+  console.log('  - isLoadingMore:', isLoadingMore.value)
+  console.log('  - hasMoreMessages:', hasMoreMessages.value)
+  console.log('  - loadMoreLock:', loadMoreLock)
+
+  if (!currentContact.value?.sessionId) {
+    console.log('❌ 退出：没有 sessionId')
+    return
+  }
+  if (isLoadingMore.value) {
+    console.log('❌ 退出：正在加载中')
+    return
+  }
+  if (!hasMoreMessages.value) {
+    console.log('❌ 退出：没有更多消息')
+    return
+  }
+  if (loadMoreLock) {
+    console.log('❌ 退出：已被锁定')
+    return
+  }
+
+  console.log('✅ 所有检查通过，开始加载')
+
+  loadMoreLock = true
+  const messages = currentMessages.value
+  if (messages.length === 0) {
+    loadMoreLock = false
+    return
+  }
+
+  isLoadingMore.value = true
+
+  // 先断开 observer
+  if (intersectionObserver) {
+    intersectionObserver.disconnect()
+    intersectionObserver = null
+  }
+
+  const container = messagesContainer.value
+  if (!container) {
+    isLoadingMore.value = false
+    loadMoreLock = false
+    return
+  }
+
+  // 记录加载前的状态
+  const scrollHeightBefore = container.scrollHeight
+  const scrollTopBefore = container.scrollTop
+
+  const oldestMsg = messages[0]
+  const beforeId = oldestMsg.id || ''
+
+  if (!beforeId) {
+    isLoadingMore.value = false
+    loadMoreLock = false
+    setupIntersectionObserver()
+    return
+  }
+
+  try {
+    // ===== 新增：延迟隐藏加载指示器，让用户能看到 =====
+    await new Promise((resolve) => setTimeout(resolve, 500)) // 延迟 600ms
+
+    await loadSessionMessages(currentContact.value.sessionId, beforeId, true)
+    await nextTick()
+
+    // 恢复滚动位置：新内容在顶部，所以 scrollHeight 增加了
+    // 我们需要将 scrollTop 增加 (新的 scrollHeight - 旧的 scrollHeight)
+    const scrollHeightAfter = container.scrollHeight
+    const heightDiff = scrollHeightAfter - scrollHeightBefore
+
+    // 设置新的滚动位置，保持在原来的消息位置
+    container.scrollTop = scrollTopBefore + heightDiff
+
+    // 强制浏览器重新计算
+    await nextTick()
+
+    // 微调，确保不在最顶部（防止无限触发）
+    if (container.scrollTop < 50) {
+      container.scrollTop = 50
+    }
+  } catch (error) {
+    console.error('加载更多消息失败:', error)
+  } finally {
+    isLoadingMore.value = false
+    loadMoreLock = false
+
+    // 延迟重新设置 observer
+    setTimeout(() => {
+      if (hasMoreMessages.value) {
+        setupIntersectionObserver()
+      }
+    }, 300)
+  }
+}
+let observerDebounceTimer = null
+
+const setupIntersectionObserver = () => {
+  console.log('🔧 setupIntersectionObserver 被调用')
+  console.log('  - loadMoreTrigger.value:', loadMoreTrigger.value)
+  console.log('  - hasMoreMessages.value:', hasMoreMessages.value)
+
+  // 先清理旧的
+  if (intersectionObserver) {
+    intersectionObserver.disconnect()
+    intersectionObserver = null
+  }
+
+  // 清除防抖定时器
+  if (observerDebounceTimer) {
+    clearTimeout(observerDebounceTimer)
+  }
+
+  if (!loadMoreTrigger.value) {
+    console.warn('❌ loadMoreTrigger 不存在！')
+    return
+  }
+  if (!hasMoreMessages.value) {
+    console.warn('❌ hasMoreMessages 为 false')
+    return
+  }
+
+  observerDebounceTimer = setTimeout(() => {
+    console.log('✅ 开始创建 IntersectionObserver')
+    intersectionObserver = new IntersectionObserver(
+      (entries) => {
+        console.log('👁️ Observer 触发！', entries[0]?.isIntersecting)
+        entries.forEach((entry) => {
+          if (
+            entry.isIntersecting &&
+            hasMoreMessages.value &&
+            !isLoadingMore.value &&
+            !loadMoreLock
+          ) {
+            const container = messagesContainer.value
+            console.log('  - container.scrollTop:', container?.scrollTop)
+            if (container && container.scrollTop <= 100) {
+              console.log('✅ 条件满足，调用 loadMoreMessages')
+              loadMoreMessages()
+            }
+          }
+        })
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '50px',
+      },
+    )
+
+    if (loadMoreTrigger.value) {
+      intersectionObserver.observe(loadMoreTrigger.value)
+      console.log('👀 开始观察 loadMoreTrigger')
+    }
+  }, 200)
+}
+// ===================================标记消息已读===================================
+const markAsRead = async (sessionId) => {
+  console.log(`=====进入标记会话消息区域=======`, sessionId, currentShop.value.shopId)
+  if (!sessionId) return
+  try {
+    const contact = currentContact.value
+    if (contact && contact.unreadCount > 0) {
+      await markAllAsRead(sessionId, currentShop.value.shopId)
+      // 调用成功后立即清除未读数，确保实时更新
+      if (contact) {
+        contact.unreadCount = 0
+        if (currentShop.value) {
+          currentShop.value.totalUnreadCount =
+            currentShop.value.contacts?.reduce((sum, c) => sum + (c.unreadCount || 0), 0) || 0
+        }
+      }
+    }
+  } catch (e) {
+    console.error('标记消息已读失败:', e)
+  }
+}
+
+// 滚动到底部
+const scrollToBottom = async () => {
+  await nextTick()
+  if (messagesContainer.value) {
+    messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+  }
 }
 
 // ==================== 滚动控制 ====================
@@ -646,745 +870,325 @@ const forceScrollToBottom = async () => {
 
 const handleUserScroll = () => {
   if (!messagesContainer.value) return
+  const container = messagesContainer.value
+
   if (isNearBottom()) {
     shouldAutoScroll = true
   } else {
     shouldAutoScroll = false
   }
+
+  // 用户上滑到顶部时重新挂载观察器（兜底 finally 未重连的情况）
+  if (
+    container.scrollTop < 100 &&
+    !intersectionObserver &&
+    hasMoreMessages.value &&
+    !isLoadingMore.value &&
+    !loadMoreLock
+  ) {
+    setupIntersectionObserver()
+  }
 }
 
-// ==================== WebSocket 连接管理 ====================
+// ===============================发送消息===============================
+const sendMessage = async () => {
+  const text = inputMessage.value.trim()
+  if (!text || !currentShop.value || !currentContact.value) return
 
-// 建立全局WebSocket连接
-const establishGlobalWebSocket = async (retryCount = 0) => {
-  if (!merchantId.value || !token.value) {
-    log('warn', '缺少必要参数，无法连接WebSocket')
-    return false
+  // 断线重连
+  if (!wsConnected.value) {
+    await connectWebSocket()
   }
 
-  if (webSocketService.isConnected()) {
-    log('info', 'WebSocket已连接')
-    wsGlobalConnected.value = true
-    // 更新所有店铺的连接状态
-    shops.value.forEach((shop) => {
-      shop.connected = true
-    })
-    return true
-  }
+  if (!wsConnected.value) return
+
+  const tempId = `temp_${Date.now()}`
+  const contact = currentContact.value
+  contact.messages = contact.messages || []
+  contact.messages.push({ id: tempId, content: text, time: new Date().toISOString(), isSelf: true })
+  inputMessage.value = ''
+  await scrollToBottom()
 
   try {
-    log('info', `尝试连接WebSocket (第 ${retryCount + 1} 次)`)
-    console.log(
-      '传入的参数(商家ID,token,店铺ID):',
-      merchantId.value,
-      token.value,
-      currentMerchantUsedShopId.value,
-    )
-
-    await webSocketService.connect(
-      currentMerchantUsedShopId.value,
-      token.value,
-      currentMerchantUsedShopId.value,
-    )
-    //  await webSocketService.connect(merchantId.value, token.value, currentMerchantUsedShopId.value)
-
-    webSocketService.subscribeAllChannels()
-    wsGlobalConnected.value = true
-    shops.value.forEach((shop) => {
-      shop.connected = true
-    })
-    log('info', 'WebSocket连接成功')
-    return true
-  } catch (error) {
-    log('error', 'WebSocket连接失败', error)
-    wsGlobalConnected.value = false
-
-    if (retryCount < 3) {
-      const delay = Math.pow(2, retryCount) * 2000
-      setTimeout(() => establishGlobalWebSocket(retryCount + 1), delay)
-    }
-    return false
-  }
-}
-
-// ==================== 店铺管理 ====================
-
-const fetchShops = async () => {
-  log('info', '开始获取商家店铺列表')
-
-  try {
-    const response = await getShopListByMerchantId()
-
-    if (response.code === 200 && response.data) {
-      const shopList = response.data
-
-      shops.value = shopList.map((shop, index) => ({
-        merchantId: shop.merchantId,
-        shopId: shop.shopId,
-        shopName: shop.shopName,
-        shopLogo: shop.shopLogo || '🏪',
-        avatarColor: getShopColor(index),
-        totalUnreadCount: 0,
-        lastMessage: '',
-        contacts: [],
-        connected: wsGlobalConnected.value, // 使用全局连接状态
-      }))
-
-      // 为每个店铺加载会话
-      for (const shop of shops.value) {
-        await fetchSessionListForShop(shop)
-      }
-
-      // 恢复上次选择的店铺
-      const lastShopInfo = getLastSelectedShop()
-      if (lastShopInfo && shops.value.length > 0) {
-        const lastShop = shops.value.find((s) => s.shopId === lastShopInfo.shopId)
-        if (lastShop) {
-          currentShop.value = lastShop
-          hasSelectedShop.value = true
-          if (lastShop.contacts && lastShop.contacts.length > 0) {
-            currentContactId.value = lastShop.contacts[0].id
-          }
-        } else {
-          currentShop.value = shops.value[0]
-          hasSelectedShop.value = false
-        }
-      } else if (shops.value.length > 0) {
-        currentShop.value = shops.value[0]
-        hasSelectedShop.value = false
-      }
-
-      return true
-    }
-    return false
-  } catch (error) {
-    log('error', '获取店铺列表异常', error)
-    return false
-  }
-}
-
-const selectShopAndOpenChat = async (shop) => {
-  currentShop.value = shop
-  hasSelectedShop.value = true
-  saveLastSelectedShop(shop)
-  shopSelectorVisible.value = false
-
-  if (!visible.value) {
-    visible.value = true
-  }
-
-  currentContactId.value = ''
-
-  if (!shop.contacts || shop.contacts.length === 0) {
-    await fetchSessionListForShop(shop)
-  }
-
-  if (shop.contacts && shop.contacts.length > 0 && !currentContactId.value) {
-    currentContactId.value = shop.contacts[0].id
-    await loadSessionMessagesForShop(shop, shop.contacts[0].sessionId)
-  }
-
-  shouldAutoScroll = true
-  await forceScrollToBottom()
-}
-
-const openShopSelector = () => {
-  shopSelectorVisible.value = true
-}
-
-const closeShopSelector = () => {
-  shopSelectorVisible.value = false
-}
-
-const fetchSessionListForShop = async (shop) => {
-  if (!shop || !shop.shopId) return
-  currentShopId.value = shop.shopId
-  console.log('开始获取店铺会话列表:', shop.shopId)
-  console.log('开始获取店铺会话列表:', currentShopId.value)
-  try {
-    const response = await getAllSessionList(shop.shopId)
-
-    if (response.code === 200 && response.data) {
-      const sessionList = response.data
-
-      const newContacts = sessionList.map((session) => ({
-        id: session.sessionId,
-        sessionId: session.sessionId,
-        name: session.partnerName || '',
-        avatar: session.partnerAvatar || getDefaultAvatar(session.partnerType),
-        partnerId: session.partnerId,
-        partnerType: session.partnerType,
-        unreadCount: session.unreadCount || 0,
-        lastMessage: session.lastMessage || '',
-        lastMessageTime: session.lastMessageTime,
-        messages: [],
-      }))
-
-      shop.contacts = newContacts
-      shop.totalUnreadCount = newContacts.reduce((sum, c) => sum + (c.unreadCount || 0), 0)
-
-      if (newContacts.length > 0 && newContacts[0].lastMessage) {
-        shop.lastMessage = newContacts[0].lastMessage
-      }
-
-      // 如果是当前选中的店铺，自动选中第一个联系人
-      if (
-        currentShop.value?.shopId === shop.shopId &&
-        newContacts.length > 0 &&
-        !currentContactId.value
-      ) {
-        currentContactId.value = newContacts[0].id
-        await loadSessionMessagesForShop(shop, newContacts[0].sessionId)
-      }
-    }
-  } catch (error) {
-    log('error', `获取店铺 ${shop.shopName} 会话列表异常`, error)
-  }
-}
-
-const loadSessionMessagesForShop = async (shop, sessionId, beforeId = null, isLoadMore = false) => {
-  if (!sessionId || !shop) return
-
-  try {
-    const params = {
-      sessionId: sessionId,
-      limit: 20,
-      beforeId: beforeId,
-      shopId: shop.shopId,
-    }
-
-    const response = await getSpectifyMessageList(params)
-
-    if (response.code === 200 && Array.isArray(response.data)) {
-      const messageRecords = response.data
-
-      const newMessages = messageRecords.map((record) => {
-        let isSelf = false
-        // 修复：判断消息是否为自己发送
-        if (record.messagePublisherId) {
-          isSelf = record.messagePublisherId === shop.shopId
-        }
-        return {
-          id: record.messageRecordId,
-          content: record.content,
-          time: record.createTime,
-          isSelf: isSelf,
-          isSystem:
-            record.messagePublisherType === 'SYSTEM' ||
-            ['PAYMENT', 'REFUND', 'LOGISTIC'].includes(record.messagePublisherType),
-          isRead: record.isRead,
-          publisherId: record.messagePublisherId,
-          publisherType: record.messagePublisherType,
-          targetUserId: record.targetUserId,
-          targetUserType: record.targetUserType,
-          sessionId: record.sessionId,
-        }
-      })
-
-      newMessages.sort((a, b) => new Date(a.time) - new Date(b.time))
-
-      let contact = shop.contacts.find((c) => c.sessionId === sessionId)
-
-      if (!contact) {
-        contact = {
-          id: sessionId,
-          sessionId: sessionId,
-          name: '加载中...',
-          avatar: '💬',
-          messages: [],
-          unreadCount: 0,
-          shopId: shop.shopId,
-        }
-        shop.contacts.push(contact)
-      }
-
-      if (isLoadMore) {
-        const existingIds = new Set(contact.messages.map((m) => m.id))
-        const toPrepend = newMessages.filter((m) => !existingIds.has(m.id))
-        contact.messages = toPrepend.concat(contact.messages)
-      } else {
-        contact.messages = newMessages
-      }
-
-      hasMoreMessages.value = messageRecords.length >= (params.limit || 20)
-
-      if (contact.messages.length > 0) {
-        const lastMsg = contact.messages[contact.messages.length - 1]
-        contact.lastMessage =
-          lastMsg.content.length > 50 ? lastMsg.content.substring(0, 50) + '...' : lastMsg.content
-        contact.lastMessageTime = lastMsg.time
-      }
-    }
-  } catch (error) {
-    log('error', '加载会话消息异常', error)
-  }
-}
-
-const markSessionAsRead = async (sessionId, shopId) => {
-  if (!sessionId) return false
-
-  const shop = shops.value.find((s) => s.shopId === shopId)
-  if (!shop) return false
-
-  const contact = shop.contacts.find((c) => c.sessionId === sessionId || c.id === sessionId)
-  if (!contact || contact.unreadCount === 0) return false
-
-  try {
-    const response = await markAllAsRead(sessionId)
-
-    if (response.code === 200) {
-      contact.unreadCount = 0
-      shop.totalUnreadCount = shop.contacts.reduce((sum, c) => sum + (c.unreadCount || 0), 0)
-      return true
-    }
-    return false
-  } catch (error) {
-    log('error', '标记已读异常', error)
-    return false
-  }
-}
-
-// ==================== WebSocket 消息发送 ====================
-
-const sendMessageViaWebSocket = async (contact, content) => {
-  if (!currentShop.value) return false
-
-  // 修复：检查全局连接状态
-  if (!webSocketService.isConnected()) {
-    log('warn', 'WebSocket未连接，尝试重连')
-    await establishGlobalWebSocket()
-    if (!webSocketService.isConnected()) {
-      return false
-    }
-  }
-
-  try {
-    // 修复：使用实际的shopId而不是字符串
     const messageData = {
-      messagePublisherId: currentShop.value.shopId, // 修复：使用实际值
+      messagePublisherId: currentShop.value.shopId,
       messagePublisherType: 'MERCHANT',
       targetUserId: contact.partnerId,
       targetUserType: contact.partnerType,
-      content: content,
+      content: text,
       sessionId: contact.sessionId,
       createTime: new Date().toISOString(),
     }
 
-    log('info', '发送消息', messageData)
-
     await sendSocketMessage('/app/sendPrivateMessage', messageData, {
-      retry: true,
-      maxRetries: 3,
-      priority: 'normal',
+      orderId: tempId,
     })
+  } catch (e) {
+    console.error('发送失败:', e)
+    contact.messages = contact.messages.filter((m) => m.id !== tempId)
+    contact.messages.push({
+      id: `${tempId}_fail`,
+      content: '发送失败',
+      time: new Date().toISOString(),
+      isSelf: true,
+      failed: true,
+    })
+    await scrollToBottom()
+  }
+}
 
+// ==================== WebSocket 连接 ====================
+const connectWebSocket = async () => {
+  console.log(
+    '🔌 connectWebSocket 调用前 ',
+    'currentShop:',
+    currentShop.value.shopId,
+    'token:',
+    token.value,
+  )
+
+  if (!currentShop.value?.shopId || !token.value) {
+    console.warn('缺少连接参数', { shopId: currentShop.value?.shopId, hasToken: !!token.value })
+    return false
+  }
+
+  try {
+    // 用 shopId 作为 userId
+    const result = await webSocketService.connect(
+      currentShop.value.shopId,
+      token.value,
+      currentShop.value.shopId,
+      'MERCHANT',
+    )
+    console.log('🔌 connectWebSocket 完成')
     return true
-  } catch (error) {
-    log('error', 'WebSocket消息发送失败', error)
+  } catch (e) {
+    console.error('WebSocket连接失败:', e)
     return false
   }
 }
 
-// ==================== 消息处理 ====================
+// ========================WebSocket=============== 消息处理===================
+const handleWebSocketMessage = async (event) => {
+  console.log('=====================这里是消息接收区域=====================')
+  console.log('收到消息数据:', event.detail)
+  const data = event.detail
+  if (!data) return
 
-const addMessageToContact = async (
-  sessionId,
-  content,
-  isSelf = false,
-  isSystem = false,
-  rawData = null,
-) => {
-  if (!sessionId) return null
+  const sessionId = data.sessionId || data.chatId || data.conversationId
+  if (!sessionId) return
 
-  let targetShop = null
-  let targetContact = null
-
-  // 查找消息对应的店铺和联系人
-  for (const shop of shops.value) {
-    const contact = shop.contacts.find((c) => c.id === sessionId || c.sessionId === sessionId)
-    if (contact) {
-      targetShop = shop
-      targetContact = contact
-      break
-    }
-  }
-
-  if (!targetShop && rawData?.shopId) {
-    targetShop = shops.value.find((s) => s.shopId === rawData.shopId)
-  }
-
+  // 找到对应店铺 - 优先用当前已选店铺（WebSocket推给商家时targetUserId是partnerId）
+  let targetShop = currentShop.value
+    ? shops.value.find((s) => s.shopId === currentShop.value.shopId)
+    : null
   if (!targetShop) {
-    log('warn', '找不到消息对应的店铺', { sessionId })
-    return null
+    targetShop = shops.value.find((s) =>
+      s.contacts?.some((c) => c.partnerId === data.messagePublisherId),
+    )
   }
 
-  if (!targetContact && rawData) {
-    const partnerId = isSelf ? rawData.targetUserId : rawData.messagePublisherId
-    const partnerType = isSelf ? rawData.targetUserType : rawData.messagePublisherType
-    const partnerName = isSelf ? rawData.targetUserName : rawData.messagePublisherName
+  if (!targetShop) return
 
-    targetContact = {
-      id: sessionId,
-      sessionId: sessionId,
-      name: partnerName || (partnerType === 'USER' ? '用户' : '联系人'),
-      avatar: rawData.partnerAvatar || getDefaultAvatar(partnerType),
-      partnerId: partnerId,
-      partnerType: partnerType,
-      messages: [],
-      unreadCount: 0,
-      lastMessage: content,
-      lastMessageTime: new Date().toISOString(),
-      shopId: targetShop.shopId,
+  const contact = targetShop.contacts?.find((c) => c.sessionId === sessionId)
+  if (!contact) return
+
+  const content = data.content || data.message || data.text || JSON.stringify(data)
+
+  // 判断是否为自己发送的消息
+  // 检查：messagePublisherId 是商家的 shopId
+  const isSelf = String(data.messagePublisherId) === String(targetShop.shopId)
+
+  // 确保消息数组存在
+  if (!contact.messages) {
+    contact.messages = []
+  }
+
+  // 检查消息是否已存在（避免重复）
+  const messageId = data.messageRecordId
+  if (messageId) {
+    const exists = contact.messages.some((m) => m.id === messageId)
+    if (exists) {
+      console.log('消息已存在，跳过:', messageId)
+      return
     }
-    targetShop.contacts.unshift(targetContact)
   }
 
-  if (!targetContact) return null
-
-  const newMsg = {
-    id: rawData?.messageRecordId || Date.now() + Math.random(),
-    content: content,
-    time: rawData?.createTime || new Date().toISOString(),
-    isSelf: isSelf,
-    isSystem: isSystem,
-    isRead: isSelf,
-    rawData: rawData,
+  // 如果是自己的消息，删除临时消息（以 temp_ 开头的）
+  if (isSelf && messageId) {
+    contact.messages = contact.messages.filter((m) => !m.id.startsWith('temp_'))
   }
 
-  const exists = targetContact.messages.some((m) => m.id === newMsg.id)
-  if (exists) return null
+  contact.messages.push({
+    id: messageId || `msg_${Date.now()}`,
+    content,
+    time: data.createTime || new Date().toISOString(),
+    isSelf,
+  })
 
-  targetContact.messages.push(newMsg)
-  targetContact.messages.sort((a, b) => new Date(a.time) - new Date(b.time))
-
-  targetContact.lastMessage = content.length > 50 ? content.substring(0, 50) + '...' : content
-  targetContact.lastMessageTime = newMsg.time
-  targetShop.lastMessage = content
-
-  // 更新未读数
-  const isCurrentChat =
-    currentShop.value?.shopId === targetShop.shopId &&
-    currentContactId.value === targetContact.id &&
-    visible.value
-
-  if (!isSelf && !isCurrentChat) {
-    targetContact.unreadCount = (targetContact.unreadCount || 0) + 1
+  // 只有收到对方消息时才增加未读数
+  if (!isSelf) {
+    contact.unreadCount = (contact.unreadCount || 0) + 1
+    contact.lastMessage = content
+    contact.lastMessageTime = data.createTime
     targetShop.totalUnreadCount = targetShop.contacts.reduce(
       (sum, c) => sum + (c.unreadCount || 0),
       0,
     )
+  } else {
+    console.log('收到自己的消息，不增加未读数')
   }
 
-  // 如果在当前聊天中且滚动到底部，自动滚动
-  if (isCurrentChat && visible.value && isNearBottom()) {
-    shouldAutoScroll = true
-    await scrollToBottomIfNeeded()
+  // 如果当前正在查看这个联系人，滚动到底部并标记已读
+  if (currentContactId.value === contact.id) {
+    await scrollToBottom()
+    await markAsRead(sessionId)
   }
-
-  return newMsg
-}
-
-const sendMessage = async () => {
-  const text = inputMessage.value.trim()
-  if (!text) return
-
-  // 修复：检查WebSocket连接状态
-  const isConnected = webSocketService.isConnected()
-
-  if (!isConnected || !currentShop.value || !currentContact.value) {
-    log('warn', '无法发送消息：连接未建立', {
-      isConnected,
-      hasShop: !!currentShop.value,
-      hasContact: !!currentContact.value,
-    })
-    await addMessageToContact(currentContactId.value, '当前网络未连接，消息发送失败', true, true)
-    inputMessage.value = ''
-    return
-  }
-
-  shouldAutoScroll = true
-
-  // 添加临时消息
-  const tempMsgId = `temp_${Date.now()}`
-  await addMessageToContact(currentContactId.value, text, true, false, {
-    messageRecordId: tempMsgId,
-    createTime: new Date().toISOString(),
-    sessionId: currentContact.value.sessionId,
-    shopId: currentShop.value.shopId,
-  })
-
-  inputMessage.value = ''
-  await forceScrollToBottom()
-
-  // 发送真实消息
-  const success = await sendMessageViaWebSocket(currentContact.value, text)
-
-  if (!success) {
-    await addMessageToContact(currentContactId.value, '消息发送失败，请重试', true, true)
-  }
-}
-
-// ==================== WebSocket 消息接收 ====================
-
-const handleWebSocketMessage = async (event) => {
-  const notification = event.detail
-  if (!notification) return
-
-  log('info', '收到WebSocket消息', notification)
-
-  let content = ''
-  let sessionId = ''
-  let messagePublisherId = ''
-  let messagePublisherType = ''
-  let shopId = notification.shopId
-
-  try {
-    if (typeof notification === 'object') {
-      content = notification.content || notification.message || JSON.stringify(notification)
-      sessionId = notification.sessionId
-      messagePublisherId = notification.messagePublisherId
-      messagePublisherType = notification.messagePublisherType
-    } else {
-      content = String(notification)
-    }
-  } catch (e) {
-    content = String(notification)
-  }
-
-  if (!sessionId) {
-    log('warn', '收到消息但无 sessionId', notification)
-    return
-  }
-
-  // 判断是否为自己发送的消息
-  let isSelf = false
-  if (messagePublisherId && currentShop.value) {
-    isSelf = messagePublisherId === currentShop.value.shopId
-  }
-
-  log('info', '处理消息', { sessionId, isSelf, content: content.substring(0, 50) })
-
-  await addMessageToContact(sessionId, content, isSelf, false, notification)
 }
 
 const updateConnectionStatus = () => {
-  const isConnected = webSocketService.isConnected()
-  wsGlobalConnected.value = isConnected
-
-  // 更新所有店铺的连接状态
+  wsConnected.value = webSocketService.isConnected()
   shops.value.forEach((shop) => {
-    shop.connected = isConnected
+    shop.connected = wsConnected.value
   })
-
-  log('info', '连接状态更新', { isConnected })
+  console.log('🔌 连接状态:', wsConnected.value)
 }
 
-// ==================== 加载更多消息 ====================
-
-const loadMoreMessages = async () => {
-  if (!currentContact.value?.sessionId) return
-  if (isLoadingMore.value) return
-  if (!hasMoreMessages.value) return
-  if (loadMoreLock) return
-  if (!currentShop.value) return
-
-  loadMoreLock = true
-  isLoadingMore.value = true
-
-  if (intersectionObserver) {
-    intersectionObserver.disconnect()
-  }
-
-  const container = messagesContainer.value
-  if (!container) {
-    isLoadingMore.value = false
-    setupIntersectionObserver()
-    loadMoreLock = false
-    return
-  }
-
-  const firstVisibleMessage = container.querySelector('.message-wrapper')
-  const anchorId = firstVisibleMessage?.dataset?.msgId
-  const anchorOffset = firstVisibleMessage?.getBoundingClientRect().top || 0
-  const oldestMsg = currentMessages.value[0]
-
-  const beforeId = oldestMsg?.id || ''
-
-  if (!beforeId) {
-    isLoadingMore.value = false
-    setupIntersectionObserver()
-    loadMoreLock = false
-    return
-  }
-
-  try {
-    await loadSessionMessagesForShop(
-      currentShop.value,
-      currentContact.value.sessionId,
-      beforeId,
-      true,
-    )
-    await nextTick()
-
-    const newAnchorEl = container.querySelector(`[data-msg-id="${anchorId}"]`)
-    if (newAnchorEl) {
-      const newOffset = newAnchorEl.getBoundingClientRect().top
-      const diff = newOffset - anchorOffset
-      container.scrollTop += diff
-    }
-  } finally {
-    setupIntersectionObserver()
-    isLoadingMore.value = false
-    loadMoreLock = false
-  }
-}
-
-const setupIntersectionObserver = () => {
-  if (intersectionObserver) {
-    intersectionObserver.disconnect()
-  }
-
-  intersectionObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && hasMoreMessages.value && !isLoadingMore.value) {
-          loadMoreMessages()
-        }
-      })
-    },
-    {
-      threshold: 0.1,
-      rootMargin: '50px',
-    },
-  )
-
-  if (loadMoreTrigger.value) {
-    intersectionObserver.observe(loadMoreTrigger.value)
-  }
-}
-
-// ==================== UI 交互 ====================
+// 定时刷新（只更新会话信息，不更新消息，避免重复）
 const startMessageRefresh = () => {
-  if (messageRefreshInterval) {
-    clearInterval(messageRefreshInterval)
-  }
-  messageRefreshInterval = setInterval(async () => {
-    if (
-      !wsGlobalConnected.value &&
-      visible.value &&
-      currentContact.value?.sessionId &&
-      currentShop.value &&
-      !isLoadingMore.value
-    ) {
-      const wasNearBottom = isNearBottom()
-      await loadSessionMessagesForShop(currentShop.value, currentContact.value.sessionId)
-      if (wasNearBottom && shouldAutoScroll) {
-        await forceScrollToBottom()
-      }
+  if (messageRefreshInterval) clearInterval(messageRefreshInterval)
+  messageRefreshInterval = setInterval(() => {
+    if (currentShop.value) {
+      // 只更新会话信息，不重新加载消息
+      updateSessionInfo(currentShop.value)
     }
   }, 5000)
 }
-const switchContact = async (contact) => {
-  if (currentContactId.value === contact.id) return
 
-  isLoadingMore.value = false
-  hasMoreMessages.value = true
-  shouldAutoScroll = true
-
-  currentContactId.value = contact.id
-
-  if (contact.sessionId && contact.unreadCount > 0 && currentShop.value) {
-    await markSessionAsRead(contact.sessionId, currentShop.value.shopId)
+// 更新会话信息（不重载消息）
+const updateSessionInfo = async (shop) => {
+  if (!shop?.shopId) return
+  try {
+    const res = await getAllSessionList(shop.shopId)
+    if (res?.data) {
+      res.data.forEach((newContact) => {
+        const existing = shop.contacts?.find((c) => c.sessionId === newContact.sessionId)
+        if (existing) {
+          // 只更新时间戳和在线状态，不更新未读数（因为未读数由前端管理）
+          existing.lastMessage = newContact.lastMessage || ''
+          existing.lastMessageTime = newContact.lastMessageTime || newContact.updateTime || ''
+          existing.online = newContact.online || false
+          // existing.unreadCount = newContact.unreadCount || 0  // 注释掉，避免覆盖前端未读数
+        }
+      })
+      shop.totalUnreadCount = shop.contacts?.reduce((sum, c) => sum + (c.unreadCount || 0), 0) || 0
+    }
+  } catch (e) {
+    console.error('更新会话信息失败:', e)
   }
-
-  if (contact.messages.length === 0 && contact.sessionId && currentShop.value) {
-    await loadSessionMessagesForShop(currentShop.value, contact.sessionId)
-  }
-  // 5. 启动消息刷新机制
-  startMessageRefresh()
-  await forceScrollToBottom()
-  await nextTick()
-  setupIntersectionObserver()
 }
 
-const minimizePanel = () => {
-  visible.value = false
-}
-
+// 删除确认
 const showDeleteConfirm = () => {
   deleteConfirmVisible.value = true
 }
-
-const confirmDeleteMessages = () => {
-  if (currentContact.value && currentShop.value) {
+const confirmDeleteMessages = async () => {
+  if (currentContact.value) {
     currentContact.value.messages = []
     currentContact.value.lastMessage = ''
-    addMessageToContact(currentContactId.value, '聊天记录已清空', false, true)
   }
   deleteConfirmVisible.value = false
 }
 
-const testConnection = async () => {
-  log('info', '手动重连')
-  await establishGlobalWebSocket()
-  if (wsGlobalConnected.value && currentShop.value) {
-    // 刷新当前会话的消息
-    if (currentContact.value) {
-      await loadSessionMessagesForShop(currentShop.value, currentContact.value.sessionId)
-      await forceScrollToBottom()
-    }
-    // 刷新会话列表
-    await fetchSessionListForShop(currentShop.value)
+// ==================== 外部打开聊天面板（从用户端发起） ====================
+const handleOpenChatFromUser = async (event) => {
+  const data = event.detail
+  console.log('[商家端] 收到打开聊天事件:', data)
+  if (!data || !data.sessionId) {
+    console.error('[商家端] sessionId 不存在')
+    return
   }
+
+  // 确保有当前店铺
+  if (!currentShop.value) {
+    // 如果没有选择店铺，先尝试加载店铺列表
+    if (shops.value.length > 0) {
+      await selectShopAndOpenChat(shops.value[0])
+    } else {
+      console.error('[商家端] 没有可用的店铺')
+      return
+    }
+  }
+
+  // 检查是否已存在该联系人
+  let contact = currentShop.value.contacts.find((c) => c.sessionId === data.sessionId)
+
+  if (!contact) {
+    // 创建新联系人
+    contact = {
+      id: data.sessionId,
+      sessionId: data.sessionId,
+      name: data.partnerName || '用户',
+      avatar:
+        data.partnerAvatar ||
+        'https://storage.360buyimg.com/default.image/6a645f6465665f696d675f393836323131373632333134353935323236_sma.jpg',
+      partnerId: data.partnerId,
+      partnerType: data.partnerType || 'USER',
+      unreadCount: 0,
+      lastMessage: '',
+      lastMessageTime: null,
+      messages: [],
+      avatarColor: '#1890ff',
+    }
+    currentShop.value.contacts.push(contact)
+    console.log('[商家端] 创建新联系人:', contact)
+  }
+
+  // 打开聊天面板并切换到该联系人
+  visible.value = true
+  await nextTick()
+  await switchContact(contact)
 }
 
 // ==================== 生命周期 ====================
-
 onMounted(async () => {
-  log('info', '组件初始化', { merchantId: merchantId.value })
+  console.log('🟢 商家组件初始化')
 
-  if (!webSocketService.isConnected() && merchantId.value && token.value) {
-    console.log('主动建立 WebSocket 连接')
-    await webSocketService.connect(
-      currentMerchantUsedShopId.value,
-      token.value,
-      currentMerchantUsedShopId.value,
-    )
-    //   await webSocketService.connect(merchantId.value, token.value, currentMerchantUsedShopId.value)
-  }
-
-  // 1. 先建立WebSocket连接
-  await establishGlobalWebSocket()
-
-  // 2. 获取店铺列表和会话
+  // 先加载店铺
   await fetchShops()
-  // 3. 添加事件监听
+  //外部监听
+  window.addEventListener('open-merchantChatToUser-session', handleOpenChatFromUser)
+
+  // 监听事件（只监听特定事件，避免 websocket-message 重复）
   window.addEventListener('chat-message', handleWebSocketMessage)
-  window.addEventListener('websocket-message', handleWebSocketMessage)
+  window.addEventListener('user-wechat-notification', handleWebSocketMessage)
+  window.addEventListener('merchant-wechat-notification', handleWebSocketMessage)
   window.addEventListener('user-payment-notification', handleWebSocketMessage)
   window.addEventListener('user-refund-notification', handleWebSocketMessage)
   window.addEventListener('user-logistic-notification', handleWebSocketMessage)
   window.addEventListener('merchant-payment-notification', handleWebSocketMessage)
   window.addEventListener('merchant-refund-notification', handleWebSocketMessage)
   window.addEventListener('merchant-logistic-notification', handleWebSocketMessage)
-  window.addEventListener('user-wechat-notification', handleWebSocketMessage)
-  window.addEventListener('merchant-wechat-notification', handleWebSocketMessage)
-  window.addEventListener('public-wechat-notification', handleWebSocketMessage)
-  window.addEventListener('topic-wechat-notification', handleWebSocketMessage)
-  window.addEventListener('topic-wechat-alias-notification', handleWebSocketMessage)
-
   webSocketService.addConnectionListener(updateConnectionStatus)
 
-  // 4. 设置连接状态检查（降低频率到30秒）
-  statusInterval = setInterval(() => {
-    if (!webSocketService.isConnected() && merchantId.value && token.value) {
-      log('info', '检测到连接断开，尝试重连')
-      establishGlobalWebSocket()
-    }
-  }, 30000)
-  // 5. 启动消息刷新机制
+  // 店铺加载完成后再连接 WebSocket
+  if (currentShop.value?.shopId) {
+    await connectWebSocket()
+  } else {
+    console.warn('⚠️ 没有选中店铺，稍后手动连接')
+  }
+
+  // 启动定时刷新
   startMessageRefresh()
+
   await nextTick()
+
+  // 检查 DOM 元素
+  console.log('🔍 DOM 检查:')
+  console.log('  - messagesContainer:', messagesContainer.value)
+  console.log('  - loadMoreTrigger:', loadMoreTrigger.value)
+  console.log('  - scrollAnchor:', scrollAnchor.value)
+
   if (messagesContainer.value) {
     messagesContainer.value.addEventListener('scroll', handleUserScroll)
   }
@@ -1392,48 +1196,38 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  //外部监听
+  window.removeEventListener('open-merchantChatToUser-session', handleOpenChatFromUser)
+
   window.removeEventListener('chat-message', handleWebSocketMessage)
-  window.removeEventListener('websocket-message', handleWebSocketMessage)
+  window.removeEventListener('user-wechat-notification', handleWebSocketMessage)
+  window.removeEventListener('merchant-wechat-notification', handleWebSocketMessage)
   window.removeEventListener('user-payment-notification', handleWebSocketMessage)
   window.removeEventListener('user-refund-notification', handleWebSocketMessage)
   window.removeEventListener('user-logistic-notification', handleWebSocketMessage)
   window.removeEventListener('merchant-payment-notification', handleWebSocketMessage)
   window.removeEventListener('merchant-refund-notification', handleWebSocketMessage)
   window.removeEventListener('merchant-logistic-notification', handleWebSocketMessage)
-  window.removeEventListener('user-wechat-notification', handleWebSocketMessage)
-  window.removeEventListener('merchant-wechat-notification', handleWebSocketMessage)
-  window.removeEventListener('public-wechat-notification', handleWebSocketMessage)
-  window.removeEventListener('topic-wechat-notification', handleWebSocketMessage)
-  window.removeEventListener('topic-wechat-alias-notification', handleWebSocketMessage)
 
+  window.removeEventListener('chat-message', handleWebSocketMessage)
+
+  window.removeEventListener('chat-message', handleWebSocketMessage)
+
+  window.removeEventListener('chat-message', handleWebSocketMessage)
   webSocketService.removeConnectionListener(updateConnectionStatus)
 
-  if (statusInterval) {
-    clearInterval(statusInterval)
-  }
-
-  if (intersectionObserver) {
-    intersectionObserver.disconnect()
-  }
-
-  if (messagesContainer.value) {
-    messagesContainer.value.removeEventListener('scroll', handleUserScroll)
-  }
+  if (messageRefreshInterval) clearInterval(messageRefreshInterval)
+  if (intersectionObserver) intersectionObserver.disconnect()
 })
 
 watch([visible, currentContactId], async () => {
-  if (visible.value && currentContact.value && currentShop.value) {
+  if (visible.value && currentContact.value) {
     if (currentContact.value.unreadCount > 0) {
-      await markSessionAsRead(currentContact.value.sessionId, currentShop.value.shopId)
+      await markAsRead(currentContact.value.sessionId)
     }
-
-    if (isNearBottom()) {
-      shouldAutoScroll = true
-      await forceScrollToBottom()
-    }
-
-    await nextTick()
-    setupIntersectionObserver()
+  }
+  if (observerDebounceTimer) {
+    clearTimeout(observerDebounceTimer)
   }
 })
 </script>
@@ -1546,6 +1340,14 @@ watch([visible, currentContactId], async () => {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border-color: #34c759;
 }
+.shop-card-avatar-wrapper {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.shop-card:hover .shop-card-avatar-wrapper {
+  transform: scale(1.1);
+}
 
 .shop-card-avatar {
   width: 80px;
@@ -1555,11 +1357,14 @@ watch([visible, currentContactId], async () => {
   align-items: center;
   justify-content: center;
   font-size: 40px;
-  position: relative;
-  margin-bottom: 12px;
+
   overflow: hidden;
+  transition: transform 0.3s ease;
 }
 
+.shop-card:hover .shop-default-icon {
+  transform: scale(1.1);
+}
 .shop-default-icon {
   font-size: 48px;
 }
@@ -1573,19 +1378,40 @@ watch([visible, currentContactId], async () => {
 
 .unread-badge-large {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  background: #ff3b30;
   color: white;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   padding: 4px 8px;
   border-radius: 20px;
   min-width: 24px;
   text-align: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 3px 8px rgba(255, 59, 48, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+  animation: badgePulse 2s ease-in-out infinite;
+  transform: scale(1);
+  transition: transform 0.2s ease;
+  top: -6px;
+  right: -6px;
+  background: linear-gradient(135deg, #ff3b30 0%, #ff6b6b 100%);
+}
+.shop-card:hover .unread-badge-large {
+  transform: scale(1.2);
 }
 
+@keyframes badgePulse {
+  0%,
+  100% {
+    box-shadow:
+      0 3px 8px rgba(255, 59, 48, 0.4),
+      0 1px 2px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 4px 12px rgba(255, 59, 48, 0.6),
+      0 2px 4px rgba(0, 0, 0, 0.15);
+  }
+}
 .shop-card-info {
   text-align: center;
   width: 100%;
@@ -1630,7 +1456,7 @@ watch([visible, currentContactId], async () => {
   opacity: 0.5;
 }
 
-/* 原有样式保持不变 */
+/* 动画 */
 .slide-fade-enter-active,
 .slide-fade-leave-active {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1687,7 +1513,7 @@ watch([visible, currentContactId], async () => {
   overflow: hidden;
 }
 
-/* 店铺切换按钮样式 - 显示真实logo和名称 */
+/* 店铺切换按钮 */
 .panel-header-bar {
   position: absolute;
   top: 12px;
@@ -1746,7 +1572,14 @@ watch([visible, currentContactId], async () => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.contact-sidebar.collapsed .switch-shop-btn .shop-btn-name,
+.contact-sidebar.collapsed .switch-shop-btn svg {
+  display: none;
+}
 
+.contact-sidebar.collapsed .switch-shop-btn {
+  padding: 6px;
+}
 .contact-sidebar {
   width: 280px;
   background: #ffffff;
@@ -1757,7 +1590,7 @@ watch([visible, currentContactId], async () => {
 }
 
 .contact-sidebar.collapsed {
-  width: 70px;
+  width: 100px;
 }
 
 .sidebar-header {
@@ -1791,7 +1624,16 @@ watch([visible, currentContactId], async () => {
 .collapse-btn:hover {
   background: #f0f0f0;
 }
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 0.5px solid #e5e5e5;
+  display: flex;
+  justify-content: center;
+}
 
+.collapse-btn:hover {
+  background: #f0f0f0;
+}
 .contact-list {
   flex: 1;
   overflow-y: auto;
@@ -1839,23 +1681,31 @@ watch([visible, currentContactId], async () => {
 
 .unread-badge-small {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  background: #ff3b30;
+  top: -6px;
+  right: -8px;
+  background: linear-gradient(135deg, #ff3b30 0%, #ff6b6b 100%);
   color: white;
   font-size: 10px;
-  font-weight: 600;
-  padding: 2px 6px;
+  font-weight: 700;
+  padding: 3px 7px;
   border-radius: 20px;
-  min-width: 18px;
+  min-width: 20px;
   text-align: center;
+  box-shadow: 0 2px 6px rgba(255, 59, 48, 0.4);
+  z-index: 10;
 }
 
 .contact-info {
   flex: 1;
   min-width: 0;
 }
+.contact-sidebar.collapsed .contact-info {
+  display: none;
+}
 
+.contact-sidebar.collapsed .sidebar-title {
+  display: none;
+}
 .contact-name {
   font-size: 16px;
   font-weight: 500;
@@ -1870,7 +1720,10 @@ watch([visible, currentContactId], async () => {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
+.contact-avatar-wrapper {
+  position: relative;
+  flex-shrink: 0;
+}
 .contact-time {
   font-size: 10px;
   color: #c6c6c8;
@@ -1880,6 +1733,13 @@ watch([visible, currentContactId], async () => {
 .contact-item.unread .contact-name {
   font-weight: 700;
   color: #34c759;
+}
+
+.empty-contacts {
+  padding: 20px;
+  text-align: center;
+  color: #8e8e93;
+  font-size: 12px;
 }
 
 .chat-area {
@@ -2028,28 +1888,82 @@ watch([visible, currentContactId], async () => {
 .load-more-trigger {
   height: 1px;
   margin: -1px 0 0 0;
+  visibility: visible;
 }
 
+/* ==================== 加载指示器样式 ==================== */
+
+/* ==================== 加载指示器样式 ==================== */
+
 .loading-more-wrapper {
-  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 12px 0;
+  background: linear-gradient(to bottom, #f5f5f5 60%, transparent); /* 和消息背景同色，渐变透明 */
+  animation: fadeInUp 0.3s ease;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .loading-more {
   display: inline-flex;
+}
+
+.loading-card {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 10px;
   padding: 8px 16px;
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2.5px solid #e5e5e5;
+  border-top-color: #34c759;
+  border-right-color: #34c759;
+  border-radius: 50%;
+  animation: spinnerRotate 0.7s linear infinite;
+}
+
+@keyframes spinnerRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-label {
+  font-size: 13px;
   color: #8e8e93;
-  font-size: 12px;
+  font-weight: 500;
 }
 
 .no-more-messages {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   text-align: center;
-  padding: 16px 0;
+  padding: 12px 0;
+  background: #f5f5f5;
   color: #c6c6c8;
   font-size: 11px;
 }
@@ -2212,31 +2126,8 @@ watch([visible, currentContactId], async () => {
   opacity: 0.6;
 }
 
-.footer-tools {
-  margin-top: 10px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.tool-btn {
-  background: transparent;
-  border: none;
-  font-size: 12px;
-  color: #8e8e93;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 5px 10px;
-  border-radius: 12px;
-  cursor: pointer;
-}
-
-.tool-btn.active {
-  color: #ff3b30;
-}
-
-.tool-btn:hover {
-  background: #f0f0f0;
+.scroll-anchor {
+  height: 1px;
 }
 
 .chat-fab {
@@ -2257,7 +2148,12 @@ watch([visible, currentContactId], async () => {
   z-index: 10001;
   color: white;
 }
-
+.fab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
 .chat-fab:hover {
   transform: scale(1.05);
   box-shadow: 0 6px 16px rgba(52, 199, 89, 0.4);
